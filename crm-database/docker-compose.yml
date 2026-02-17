@@ -1,0 +1,46 @@
+# docker-compose.yml — CRM Full Stack
+# Usage: docker-compose up --build
+
+services:
+  # ── Backend API ──────────────────────────────────────────────────
+  backend:
+    build:
+      context: ../crm-backend
+      dockerfile: ../crm-database/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - db-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:////app/data/crm.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Frontend ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ../crm-frontend
+      dockerfile: ../crm-database/Dockerfile.frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ── Database Migrations & Seed ───────────────────────────────────
+  db-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    volumes:
+      - db-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:////app/data/crm.db
+    depends_on:
+      - backend
+
+volumes:
+  db-data:
