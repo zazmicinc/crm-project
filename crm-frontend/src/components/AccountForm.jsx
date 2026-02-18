@@ -1,28 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function AccountForm({ account, onSubmit, onCancel }) {
     const [form, setForm] = useState({
-        name: '',
-        industry: '',
-        website: '',
-        phone: '',
-        email: '',
-        address: '',
+        name: account?.name || '',
+        industry: account?.industry || '',
+        website: account?.website || '',
+        phone: account?.phone || '',
+        email: account?.email || '',
+        address: account?.address || '',
     });
     const [error, setError] = useState('');
-
-    useEffect(() => {
-        if (account) {
-            setForm({
-                name: account.name || '',
-                industry: account.industry || '',
-                website: account.website || '',
-                phone: account.phone || '',
-                email: account.email || '',
-                address: account.address || '',
-            });
-        }
-    }, [account]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

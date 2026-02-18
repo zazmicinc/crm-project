@@ -54,6 +54,7 @@ export default function AccountsPage() {
     if (editingAccount) {
         return (
             <AccountForm
+                key={editingAccount.id}
                 account={editingAccount}
                 onSubmit={handleUpdate}
                 onCancel={() => setEditingAccount(null)}
