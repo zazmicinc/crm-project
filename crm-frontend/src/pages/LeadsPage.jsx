@@ -4,12 +4,32 @@ import { leadsApi } from '../api';
 import LeadForm from '../components/LeadForm';
 import { useAuth } from '../context/AuthContext';
 
-const STATUS_COLORS = {
-    New: 'blue',
-    Contacted: 'yellow',
-    Qualified: 'green',
-    Converted: 'purple',
-    Dead: 'gray',
+// Badge configuration for status
+const BADGE_CLASSES = {
+    New: 'crm-badge-new',
+    Contacted: 'crm-badge-contacted',
+    Qualified: 'crm-badge-qualified',
+    Converted: 'crm-badge-converted',
+    Dead: 'crm-badge-dead',
+};
+
+// Avatar gradient generator
+const getAvatarGradient = (name) => {
+    const gradients = [
+        'linear-gradient(135deg, #3b82f6, #6366f1)', // blue
+        'linear-gradient(135deg, #f59e0b, #ef4444)', // amber-red
+        'linear-gradient(135deg, #10b981, #3b82f6)', // green-blue
+        'linear-gradient(135deg, #8b5cf6, #ec4899)', // purple-pink
+        'linear-gradient(135deg, #06b6d4, #6366f1)', // cyan-indigo
+        'linear-gradient(135deg, #f97316, #f59e0b)', // orange-amber
+        'linear-gradient(135deg, #10b981, #059669)', // green-emerald
+        'linear-gradient(135deg, #8b5cf6, #3b82f6)', // purple-blue
+        'linear-gradient(135deg, #ef4444, #f97316)', // red-orange
+        'linear-gradient(135deg, #6366f1, #8b5cf6)', // indigo-purple
+    ];
+    if (!name) return gradients[0];
+    const index = name.charCodeAt(0) % gradients.length;
+    return gradients[index];
 };
 
 export default function LeadsPage() {
@@ -19,6 +39,10 @@ export default function LeadsPage() {
     const [statusFilter, setStatusFilter] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const pageSize = 10;
 
     const fetchLeads = useCallback(async () => {
         setLoading(true);
@@ -54,132 +78,205 @@ export default function LeadsPage() {
         }
     };
 
+    // Calculate stats
+    const stats = {
+        total: leads.length,
+        contacted: leads.filter(l => l.status === 'Contacted').length,
+        qualified: leads.filter(l => l.status === 'Qualified').length,
+        converted: leads.filter(l => l.status === 'Converted').length,
+    };
+
+    const paginatedLeads = leads.slice((page - 1) * pageSize, page * pageSize);
+
     if (showForm) {
         return <LeadForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />;
     }
 
     return (
-        <div className="animate-fade-in max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
-                <div>
-                    <h1 className="text-4xl font-bold text-white tracking-tight">Leads</h1>
-                    <p className="text-slate-400 text-base mt-2 font-medium">{leads.length} leads matching filters</p>
-                </div>
-                {hasPermission('leads.create') && (
-                    <button className="btn-primary shadow-lg shadow-indigo-500/20 px-6 py-3" onClick={() => setShowForm(true)}>
-                        <span className="text-xl leading-none mb-0.5">+</span> New Lead
-                    </button>
-                )}
-            </div>
-
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-4 mb-10">
-                <div className="relative max-w-md w-full sm:w-auto sm:min-w-[300px] group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <span className="text-slate-500 group-focus-within:text-indigo-400 transition-colors text-sm">🔍</span>
+        <div className="crm-page-container">
+            <div className="crm-page-content">
+                {/* Header */}
+                <div className="crm-page-header">
+                    <div className="crm-page-title-group">
+                        <h1 className="crm-page-title">Leads</h1>
+                        <p className="crm-page-subtitle"><span>{leads.length}</span> leads matching filters</p>
                     </div>
-                    <input
-                        className="input-field pl-10 py-2.5 shadow-sm bg-slate-800/50 border-slate-700 focus:bg-slate-800 transition-all text-sm"
-                        placeholder="Search leads..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                </div>
-
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                    <button 
-                        onClick={() => setStatusFilter('')}
-                        className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                            statusFilter === '' ? 'bg-white/10 text-white border border-white/20' : 'text-slate-500 hover:text-slate-300 border border-transparent'
-                        }`}
-                    >
-                        All
-                    </button>
-                    {Object.keys(STATUS_COLORS).map(status => (
-                        <button 
-                            key={status}
-                            onClick={() => setStatusFilter(status)}
-                            className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border whitespace-nowrap ${
-                                statusFilter === status 
-                                    ? `bg-${STATUS_COLORS[status]}-500/20 text-${STATUS_COLORS[status]}-400 border-${STATUS_COLORS[status]}-500/40` 
-                                    : 'text-slate-500 border-transparent hover:text-slate-300'
-                            }`}
-                        >
-                            {status}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Loading */}
-            {loading ? (
-                <div className="text-center py-24">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
-                    <p className="text-slate-400 text-sm">Refreshing leads…</p>
-                </div>
-            ) : leads.length === 0 ? (
-                <div className="glass-card p-16 text-center max-w-lg mx-auto mt-8 border border-white/5 bg-slate-800/40">
-                    <div className="w-20 h-20 bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-                        <span className="text-4xl opacity-80">🎯</span>
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">No leads found</h3>
-                    <p className="text-slate-400 mb-8 leading-relaxed text-sm">
-                        {search || statusFilter ? 'Try adjusting your search or filters.' : 'Get started by creating your first lead to track potential customers.'}
-                    </p>
-                    {!(search || statusFilter) && hasPermission('leads.create') && (
-                        <button className="btn-primary" onClick={() => setShowForm(true)}>
-                            Create Lead
+                    {hasPermission('leads.create') && (
+                        <button className="crm-btn-primary" onClick={() => setShowForm(true)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                            New Lead
                         </button>
                     )}
                 </div>
-            ) : (
-                /* Leads Table */
-                <div className="glass-card overflow-hidden border border-white/5 shadow-xl bg-slate-900/40 backdrop-blur-md">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-white/5 bg-white/[0.02] text-slate-400 text-xs uppercase tracking-wider font-semibold">
-                                    <th className="py-5 px-6">Name</th>
-                                    <th className="py-5 px-6">Email</th>
-                                    <th className="py-5 px-6">Company</th>
-                                    <th className="py-5 px-6">Status</th>
-                                    <th className="py-5 px-6">Source</th>
-                                    <th className="py-5 px-6 text-right">Created</th>
-                                    <th className="py-5 px-6 text-right">Actions</th>
+
+                {/* Stats */}
+                <div className="crm-stats-strip">
+                    <div className="crm-stat-card">
+                        <div className="crm-stat-label">Total Leads</div>
+                        <div className="crm-stat-value">{stats.total}</div>
+                        <div className="crm-stat-change">↑ 12% this month</div>
+                    </div>
+                    <div className="crm-stat-card">
+                        <div className="crm-stat-label">Contacted</div>
+                        <div className="crm-stat-value">{stats.contacted}</div>
+                        <div className="crm-stat-change" style={{ color: 'var(--amber)' }}>30% of total</div>
+                    </div>
+                    <div className="crm-stat-card">
+                        <div className="crm-stat-label">Qualified</div>
+                        <div className="crm-stat-value">{stats.qualified}</div>
+                        <div className="crm-stat-change">↑ On track</div>
+                    </div>
+                    <div className="crm-stat-card">
+                        <div className="crm-stat-label">Converted</div>
+                        <div className="crm-stat-value">{stats.converted}</div>
+                        <div className="crm-stat-change" style={{ color: 'var(--purple-light)' }}>10% rate</div>
+                    </div>
+                </div>
+
+                {/* Toolbar */}
+                <div className="crm-toolbar">
+                    <div className="crm-search-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        <input 
+                            type="text" 
+                            placeholder="Search leads..." 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="crm-filter-tabs">
+                        <button 
+                            className={`crm-tab ${statusFilter === '' ? 'active' : ''}`}
+                            onClick={() => setStatusFilter('')}
+                        >
+                            ALL
+                        </button>
+                        {['New', 'Contacted', 'Qualified', 'Converted', 'Dead'].map(status => (
+                            <button
+                                key={status}
+                                className={`crm-tab ${statusFilter === status ? 'active' : ''}`}
+                                onClick={() => setStatusFilter(status)}
+                            >
+                                {status.toUpperCase()}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="crm-toolbar-right">
+                        <button className="crm-btn-ghost">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            Filter
+                        </button>
+                        <button className="crm-btn-ghost">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                            Export
+                        </button>
+                    </div>
+                </div>
+
+                {/* Table */}
+                <div className="crm-table-wrap">
+                    <table className="crm-table">
+                        <thead className="crm-thead">
+                            <tr>
+                                <th style={{ width: '36px' }} className="crm-th"><input type="checkbox" className="crm-cb" /></th>
+                                <th className="crm-th">Name</th>
+                                <th className="crm-th">Email</th>
+                                <th className="crm-th">Company</th>
+                                <th className="crm-th">Status</th>
+                                <th className="crm-th">Source</th>
+                                <th className="crm-th">Created</th>
+                                <th className="crm-th">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="crm-tbody">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                        Loading leads...
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {leads.map((lead) => (
-                                    <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
-                                        <td className="py-5 px-6 font-medium text-slate-200">
-                                            <Link to={`/leads/${lead.id}`} className="hover:text-indigo-400 transition-colors">
-                                                {lead.first_name} {lead.last_name}
-                                            </Link>
+                            ) : paginatedLeads.length === 0 ? (
+                                <tr>
+                                    <td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                        No leads found.
+                                    </td>
+                                </tr>
+                            ) : (
+                                paginatedLeads.map((lead) => (
+                                    <tr key={lead.id} onClick={() => {/* Navigate to detail if needed */}}>
+                                        <td className="crm-td"><input type="checkbox" className="crm-cb" /></td>
+                                        <td className="crm-td">
+                                            <div className="crm-item-name">
+                                                <div className="crm-item-avatar" style={{ background: getAvatarGradient(lead.first_name) }}>
+                                                    {lead.first_name?.[0]}{lead.last_name?.[0]}
+                                                </div>
+                                                <span className="crm-item-name-text">
+                                                    <Link to={`/leads/${lead.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                                        {lead.first_name} {lead.last_name}
+                                                    </Link>
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td className="py-5 px-6 text-slate-400 text-sm">{lead.email}</td>
-                                        <td className="py-5 px-6 text-slate-400 text-sm">{lead.company || <span className="text-slate-600 italic opacity-50">None</span>}</td>
-                                        <td className="py-5 px-6">
-                                            <span className={`badge badge-${STATUS_COLORS[lead.status] || 'gray'} shadow-sm text-[10px]`}>
+                                        <td className="crm-td crm-td-secondary">{lead.email}</td>
+                                        <td className="crm-td crm-td-secondary">{lead.company || '--'}</td>
+                                        <td className="crm-td">
+                                            <span className={`crm-badge ${BADGE_CLASSES[lead.status] || 'crm-badge-new'}`}>
+                                                <span className="crm-badge-dot"></span>
                                                 {lead.status}
                                             </span>
                                         </td>
-                                        <td className="py-5 px-6 text-slate-400 text-sm">{lead.source || '-'}</td>
-                                        <td className="py-5 px-6 text-right text-slate-500 text-xs tabular-nums">
-                                            {new Date(lead.created_at).toLocaleDateString()}
+                                        <td className="crm-td">
+                                            <div className="crm-td-source">
+                                                <span className="crm-source-dot"></span>
+                                                {lead.source || 'Unknown'}
+                                            </div>
                                         </td>
-                                        <td className="py-5 px-6 text-right">
-                                            <Link to={`/leads/${lead.id}`} className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors">
-                                                Detail
-                                            </Link>
+                                        <td className="crm-td crm-td-date">
+                                            {new Date(lead.created_at).toLocaleDateString('en-GB')}
+                                        </td>
+                                        <td className="crm-td">
+                                            <div className="crm-actions">
+                                                <Link to={`/leads/${lead.id}`} style={{ textDecoration: 'none' }}>
+                                                    <button className="crm-btn-action">Detail</button>
+                                                </Link>
+                                                <button className="crm-btn-action-icon">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+
+                    {/* Pagination */}
+                    <div className="crm-pagination">
+                        <div className="crm-pagination-info">
+                            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, leads.length)} of {leads.length} leads
+                        </div>
+                        <div className="crm-pagination-controls">
+                            <button 
+                                className="crm-page-btn" 
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                            >
+                                ‹
+                            </button>
+                            <button className="crm-page-btn active">{page}</button>
+                            <button 
+                                className="crm-page-btn"
+                                onClick={() => setPage(p => (p * pageSize < leads.length ? p + 1 : p))}
+                                disabled={page * pageSize >= leads.length}
+                            >
+                                ›
+                            </button>
+                        </div>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 }
