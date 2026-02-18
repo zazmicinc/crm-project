@@ -6,6 +6,7 @@ const navItems = [
     { path: '/', label: 'Contacts', icon: '👥' },
     { path: '/accounts', label: 'Accounts', icon: '🏢' },
     { path: '/deals', label: 'Pipeline', icon: '📊' },
+    { path: '/settings/pipelines', label: 'Settings', icon: '⚙️' },
 ];
 
 export default function Layout({ children }) {

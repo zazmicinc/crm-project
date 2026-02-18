@@ -84,6 +84,8 @@ class Deal(Base):
     )
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
+    pipeline_id = Column(Integer, ForeignKey("pipelines.id"), nullable=True)
+    stage_id = Column(Integer, ForeignKey("stages.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -93,6 +95,9 @@ class Deal(Base):
 
     contact = relationship("Contact", back_populates="deals")
     account = relationship("Account", back_populates="deals")
+    pipeline = relationship("Pipeline", back_populates="deals")
+    stage_rel = relationship("Stage", back_populates="deals", foreign_keys=[stage_id])
+    stage_history = relationship("StageChange", back_populates="deal", cascade="all, delete-orphan")
 
     @property
     def account_name(self):
@@ -157,3 +162,60 @@ class Lead(Base):
     contact = relationship("Contact", foreign_keys=[converted_to_contact_id])
     account = relationship("Account", foreign_keys=[converted_to_account_id])
     deal = relationship("Deal", foreign_keys=[converted_to_deal_id])
+
+
+class Pipeline(Base):
+    """A sales pipeline containing multiple stages."""
+
+    __tablename__ = "pipelines"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, unique=True)
+    is_default = Column(Integer, default=0)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    stages = relationship("Stage", back_populates="pipeline", order_by="Stage.order", cascade="all, delete-orphan")
+    deals = relationship("Deal", back_populates="pipeline")
+
+
+class Stage(Base):
+    """A stage within a sales pipeline."""
+
+    __tablename__ = "stages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pipeline_id = Column(Integer, ForeignKey("pipelines.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    order = Column(Integer, nullable=False, default=0)
+    probability = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    pipeline = relationship("Pipeline", back_populates="stages")
+    deals = relationship("Deal", back_populates="stage_rel")
+
+
+class StageChange(Base):
+    """Record of a deal moving between stages."""
+
+    __tablename__ = "stage_changes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    deal_id = Column(Integer, ForeignKey("deals.id"), nullable=False)
+    from_stage_id = Column(Integer, ForeignKey("stages.id"), nullable=True)
+    to_stage_id = Column(Integer, ForeignKey("stages.id"), nullable=False)
+    changed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    changed_by = Column(Integer, nullable=True)
+
+    deal = relationship("Deal", back_populates="stage_history")
+    from_stage = relationship("Stage", foreign_keys=[from_stage_id])
+    to_stage = relationship("Stage", foreign_keys=[to_stage_id])

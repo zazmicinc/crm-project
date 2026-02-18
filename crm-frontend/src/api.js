@@ -45,6 +45,7 @@ export const dealsApi = {
     create: (data) => request('/deals/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/deals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/deals/${id}`, { method: 'DELETE' }),
+    move: (id, stage_id) => request(`/deals/${id}/move`, { method: 'POST', body: JSON.stringify({ stage_id }) }),
 };
 
 // ── Activities ───────────────────────────────────────────────────────────────
@@ -87,4 +88,21 @@ export const leadsApi = {
     update: (id, data) => request(`/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/leads/${id}`, { method: 'DELETE' }),
     convert: (id, data) => request(`/leads/${id}/convert`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Pipelines ────────────────────────────────────────────────────────────────
+
+export const pipelinesApi = {
+    list: () => request('/pipelines/'),
+    get: (id) => request(`/pipelines/${id}`),
+    create: (data) => request('/pipelines/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/pipelines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/pipelines/${id}`, { method: 'DELETE' }),
+    
+    // Stages
+    listStages: (pipelineId) => request(`/pipelines/${pipelineId}/stages/`),
+    createStage: (pipelineId, data) => request(`/pipelines/${pipelineId}/stages/`, { method: 'POST', body: JSON.stringify(data) }),
+    updateStage: (pipelineId, stageId, data) => request(`/pipelines/${pipelineId}/stages/${stageId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteStage: (pipelineId, stageId) => request(`/pipelines/${pipelineId}/stages/${stageId}`, { method: 'DELETE' }),
+    reorderStages: (pipelineId, stageIds) => request(`/pipelines/${pipelineId}/stages/reorder`, { method: 'PUT', body: JSON.stringify({ stage_ids: stageIds }) }),
 };

@@ -109,6 +109,8 @@ class DealBase(BaseModel):
     stage: DealStage = Field(DealStage.prospecting, examples=["prospecting"])
     contact_id: int = Field(..., examples=[1])
     account_id: Optional[int] = Field(None, examples=[1])
+    pipeline_id: Optional[int] = Field(None, examples=[1])
+    stage_id: Optional[int] = Field(None, examples=[1])
 
 
 class DealCreate(DealBase):
@@ -121,6 +123,8 @@ class DealUpdate(BaseModel):
     stage: Optional[DealStage] = None
     contact_id: Optional[int] = None
     account_id: Optional[int] = None
+    pipeline_id: Optional[int] = None
+    stage_id: Optional[int] = None
 
 
 class DealResponse(DealBase):
@@ -130,6 +134,12 @@ class DealResponse(DealBase):
     created_at: datetime
     updated_at: datetime
     account_name: Optional[str] = None
+
+    @property
+    def account_name(self) -> Optional[str]:
+        if hasattr(self, "account") and self.account:
+            return self.account.name
+        return None
 
 
 # ── Activity Schemas ─────────────────────────────────────────────────────────
@@ -161,6 +171,8 @@ class ActivityResponse(ActivityBase):
     id: int
     date: datetime
     created_at: datetime
+
+
 # ── Lead Schemas ─────────────────────────────────────────────────────────────
 
 
@@ -226,3 +238,78 @@ class LeadConvert(BaseModel):
     contact: Optional[LeadConvertContact] = None
     account: Optional[LeadConvertAccount] = None
     deal: Optional[LeadConvertDeal] = None
+
+
+# ── Pipeline Schemas ─────────────────────────────────────────────────────────
+
+
+class PipelineBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, examples=["Sales Pipeline"])
+    is_default: bool = Field(False, examples=[True])
+
+
+class PipelineCreate(PipelineBase):
+    pass
+
+
+class PipelineUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    is_default: Optional[bool] = None
+
+
+class PipelineResponse(PipelineBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+# ── Stage Schemas ────────────────────────────────────────────────────────────
+
+
+class StageBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, examples=["Discovery"])
+    order: int = Field(0, examples=[1])
+    probability: int = Field(0, ge=0, le=100, examples=[20])
+
+
+class StageCreate(StageBase):
+    pass
+
+
+class StageUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    order: Optional[int] = None
+    probability: Optional[int] = Field(None, ge=0, le=100)
+
+
+class StageResponse(StageBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    pipeline_id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class StageReorder(BaseModel):
+    stage_ids: list[int]
+
+
+# ── Stage Change Schemas ─────────────────────────────────────────────────────
+
+
+class StageChangeResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    deal_id: int
+    from_stage_id: Optional[int]
+    to_stage_id: int
+    changed_at: datetime
+    changed_by: Optional[int]
+
+
+class DealMove(BaseModel):
+    stage_id: int
