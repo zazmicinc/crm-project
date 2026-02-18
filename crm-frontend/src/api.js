@@ -59,3 +59,18 @@ export const activitiesApi = {
     update: (id, data) => request(`/activities/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/activities/${id}`, { method: 'DELETE' }),
 };
+
+// ── Accounts ─────────────────────────────────────────────────────────────────
+
+export const accountsApi = {
+    list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/accounts/${qs ? '?' + qs : ''}`);
+    },
+    get: (id) => request(`/accounts/${id}`),
+    create: (data) => request('/accounts/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/accounts/${id}`, { method: 'DELETE' }),
+    getContacts: (id) => request(`/accounts/${id}/contacts`),
+    getDeals: (id) => request(`/accounts/${id}/deals`),
+};

@@ -25,6 +25,39 @@ class ActivityType(str, Enum):
     meeting = "meeting"
 
 
+# ── Account Schemas ──────────────────────────────────────────────────────────
+
+
+class AccountBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, examples=["Acme Corp"])
+    industry: Optional[str] = Field(None, max_length=255, examples=["Technology"])
+    website: Optional[str] = Field(None, max_length=255, examples=["https://acme.com"])
+    phone: Optional[str] = Field(None, max_length=50, examples=["+1-555-0100"])
+    email: Optional[EmailStr] = Field(None, examples=["contact@acme.com"])
+    address: Optional[str] = Field(None, examples=["123 Main St"])
+
+
+class AccountCreate(AccountBase):
+    pass
+
+
+class AccountUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    industry: Optional[str] = Field(None, max_length=255)
+    website: Optional[str] = Field(None, max_length=255)
+    phone: Optional[str] = Field(None, max_length=50)
+    email: Optional[EmailStr] = None
+    address: Optional[str] = None
+
+
+class AccountResponse(AccountBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
 # ── Contact Schemas ──────────────────────────────────────────────────────────
 
 
@@ -34,6 +67,7 @@ class ContactBase(BaseModel):
     phone: Optional[str] = Field(None, max_length=50, examples=["+1-555-0100"])
     company: Optional[str] = Field(None, max_length=255, examples=["Acme Corp"])
     notes: Optional[str] = Field(None, examples=["Met at conference"])
+    account_id: Optional[int] = Field(None, examples=[1])
 
 
 class ContactCreate(ContactBase):
@@ -46,6 +80,7 @@ class ContactUpdate(BaseModel):
     phone: Optional[str] = Field(None, max_length=50)
     company: Optional[str] = Field(None, max_length=255)
     notes: Optional[str] = None
+    account_id: Optional[int] = None
 
 
 class ContactResponse(ContactBase):
@@ -54,6 +89,7 @@ class ContactResponse(ContactBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    account_name: Optional[str] = None
 
 
 # ── Deal Schemas ─────────────────────────────────────────────────────────────
@@ -64,6 +100,7 @@ class DealBase(BaseModel):
     value: float = Field(..., ge=0, examples=[15000.0])
     stage: DealStage = Field(DealStage.prospecting, examples=["prospecting"])
     contact_id: int = Field(..., examples=[1])
+    account_id: Optional[int] = Field(None, examples=[1])
 
 
 class DealCreate(DealBase):
@@ -75,6 +112,7 @@ class DealUpdate(BaseModel):
     value: Optional[float] = Field(None, ge=0)
     stage: Optional[DealStage] = None
     contact_id: Optional[int] = None
+    account_id: Optional[int] = None
 
 
 class DealResponse(DealBase):
@@ -83,6 +121,7 @@ class DealResponse(DealBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    account_name: Optional[str] = None
 
 
 # ── Activity Schemas ─────────────────────────────────────────────────────────

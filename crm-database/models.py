@@ -8,6 +8,27 @@ from sqlalchemy.orm import relationship, declarative_base
 Base = declarative_base()
 
 
+class Account(Base):
+    __tablename__ = "accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    industry = Column(String(255), nullable=True)
+    website = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    email = Column(String(255), nullable=True)
+    address = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    contacts = relationship("Contact", back_populates="account")
+    deals = relationship("Deal", back_populates="account")
+
+
 class Contact(Base):
     __tablename__ = "contacts"
 
@@ -17,6 +38,7 @@ class Contact(Base):
     phone = Column(String(50), nullable=True)
     company = Column(String(255), nullable=True, index=True)
     notes = Column(Text, nullable=True)
+    account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -24,6 +46,7 @@ class Contact(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    account = relationship("Account", back_populates="contacts")
     deals = relationship("Deal", back_populates="contact", cascade="all, delete-orphan")
     activities = relationship("Activity", back_populates="contact", cascade="all, delete-orphan")
 
@@ -41,6 +64,7 @@ class Deal(Base):
         default="prospecting",
     )
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False)
+    account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -49,6 +73,7 @@ class Deal(Base):
     )
 
     contact = relationship("Contact", back_populates="deals")
+    account = relationship("Account", back_populates="deals")
 
 
 class Activity(Base):
