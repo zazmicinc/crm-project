@@ -79,6 +79,7 @@ class Deal(Base):
     pipeline = relationship("Pipeline", back_populates="deals")
     stage_rel = relationship("Stage", back_populates="deals", foreign_keys=[stage_id])
     stage_history = relationship("StageChange", back_populates="deal", cascade="all, delete-orphan")
+    activities = relationship("Activity", back_populates="deal", cascade="all, delete-orphan")
 
 
 class Activity(Base):
@@ -93,9 +94,11 @@ class Activity(Base):
     description = Column(Text, nullable=True)
     date = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False)
+    deal_id = Column(Integer, ForeignKey("deals.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     contact = relationship("Contact", back_populates="activities")
+    deal = relationship("Deal", back_populates="activities")
 
 
 class Lead(Base):
@@ -179,3 +182,22 @@ class StageChange(Base):
     deal = relationship("Deal", back_populates="stage_history")
     from_stage = relationship("Stage", foreign_keys=[from_stage_id])
     to_stage = relationship("Stage", foreign_keys=[to_stage_id])
+
+
+class Note(Base):
+    __tablename__ = "notes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(Text, nullable=False)
+    related_to_type = Column(
+        Enum("contact", "deal", "lead", "account", name="related_to_type"),
+        nullable=False,
+    )
+    related_to_id = Column(Integer, nullable=False, index=True)
+    created_by = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )

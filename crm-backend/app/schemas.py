@@ -151,6 +151,7 @@ class ActivityBase(BaseModel):
     description: Optional[str] = Field(None, examples=["Discussed pricing options"])
     date: Optional[datetime] = Field(None, examples=["2026-02-17T10:00:00"])
     contact_id: int = Field(..., examples=[1])
+    deal_id: Optional[int] = Field(None, examples=[1])
 
 
 class ActivityCreate(ActivityBase):
@@ -163,6 +164,7 @@ class ActivityUpdate(BaseModel):
     description: Optional[str] = None
     date: Optional[datetime] = None
     contact_id: Optional[int] = None
+    deal_id: Optional[int] = None
 
 
 class ActivityResponse(ActivityBase):
@@ -309,7 +311,56 @@ class StageChangeResponse(BaseModel):
     to_stage_id: int
     changed_at: datetime
     changed_by: Optional[int]
+    from_stage_name: Optional[str] = None
+    to_stage_name: Optional[str] = None
 
 
 class DealMove(BaseModel):
     stage_id: int
+# ── Note Schemas ─────────────────────────────────────────────────────────────
+
+
+class RelatedToType(str, Enum):
+    contact = "contact"
+    deal = "deal"
+    lead = "lead"
+    account = "account"
+
+
+class NoteBase(BaseModel):
+    content: str = Field(..., min_length=1)
+    related_to_type: RelatedToType
+    related_to_id: int
+
+
+class NoteCreate(NoteBase):
+    pass
+
+
+class NoteUpdate(BaseModel):
+    content: Optional[str] = Field(None, min_length=1)
+
+
+class NoteResponse(NoteBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[int]
+
+
+# ── Timeline Schemas ─────────────────────────────────────────────────────────
+
+
+class TimelineEventType(str, Enum):
+    note = "note"
+    activity = "activity"
+    stage_change = "stage_change"
+
+
+class TimelineEvent(BaseModel):
+    id: int
+    type: TimelineEventType
+    timestamp: datetime
+    data: dict  # Full object (NoteResponse, ActivityResponse, StageChangeResponse)

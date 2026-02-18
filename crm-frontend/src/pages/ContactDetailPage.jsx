@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { contactsApi, dealsApi, activitiesApi } from '../api';
 import ContactForm from '../components/ContactForm';
+import Timeline from '../components/Timeline';
 
 export default function ContactDetailPage() {
     const { id } = useParams();
@@ -11,6 +12,7 @@ export default function ContactDetailPage() {
     const [activities, setActivities] = useState([]);
     const [editing, setEditing] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('overview');
 
     const fetchData = async () => {
         setLoading(true);
@@ -106,56 +108,80 @@ export default function ContactDetailPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Deals */}
-                <div className="glass-card p-5">
-                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                        📊 Deals
-                    </h2>
-                    {deals.length === 0 ? (
-                        <p className="text-slate-500 text-sm py-4">No deals yet</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {deals.map((d) => (
-                                <div key={d.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
-                                    <div>
-                                        <p className="font-medium text-sm">{d.title}</p>
-                                        <span className={`badge badge-${d.stage} mt-1`}>{d.stage.replace('_', ' ')}</span>
-                                    </div>
-                                    <p className="font-semibold text-green-400">{formatCurrency(d.value)}</p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Activities */}
-                <div className="glass-card p-5">
-                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                        📋 Activity Log
-                    </h2>
-                    {activities.length === 0 ? (
-                        <p className="text-slate-500 text-sm py-4">No activities yet</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {activities.map((a) => (
-                                <div key={a.id} className="p-3 rounded-lg bg-slate-800/50">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`badge badge-${a.type}`}>{a.type}</span>
-                                            <p className="font-medium text-sm">{a.subject}</p>
-                                        </div>
-                                        <p className="text-xs text-slate-500">{formatDate(a.date)}</p>
-                                    </div>
-                                    {a.description && (
-                                        <p className="text-xs text-slate-400 mt-1">{a.description}</p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+            {/* Tabs */}
+            <div className="flex gap-6 border-b border-slate-700/50 mb-6 px-1">
+                <button
+                    className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+                        activeTab === 'overview' ? 'text-indigo-400 border-indigo-400' : 'text-slate-400 border-transparent hover:text-white'
+                    }`}
+                    onClick={() => setActiveTab('overview')}
+                >
+                    Overview
+                </button>
+                <button
+                    className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+                        activeTab === 'timeline' ? 'text-indigo-400 border-indigo-400' : 'text-slate-400 border-transparent hover:text-white'
+                    }`}
+                    onClick={() => setActiveTab('timeline')}
+                >
+                    Timeline
+                </button>
             </div>
+
+            {activeTab === 'overview' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Deals */}
+                    <div className="glass-card p-5">
+                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                            📊 Deals
+                        </h2>
+                        {deals.length === 0 ? (
+                            <p className="text-slate-500 text-sm py-4">No deals yet</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {deals.map((d) => (
+                                    <div key={d.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+                                        <div>
+                                            <p className="font-medium text-sm">{d.title}</p>
+                                            <span className={`badge badge-${d.stage} mt-1`}>{d.stage.replace('_', ' ')}</span>
+                                        </div>
+                                        <p className="font-semibold text-green-400">{formatCurrency(d.value)}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Activities */}
+                    <div className="glass-card p-5">
+                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                            📋 Activity Log
+                        </h2>
+                        {activities.length === 0 ? (
+                            <p className="text-slate-500 text-sm py-4">No activities yet</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {activities.map((a) => (
+                                    <div key={a.id} className="p-3 rounded-lg bg-slate-800/50">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`badge badge-${a.type}`}>{a.type}</span>
+                                                <p className="font-medium text-sm">{a.subject}</p>
+                                            </div>
+                                            <p className="text-xs text-slate-500">{formatDate(a.date)}</p>
+                                        </div>
+                                        {a.description && (
+                                            <p className="text-xs text-slate-400 mt-1">{a.description}</p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <Timeline relatedToType="contact" relatedToId={id} />
+            )}
         </div>
     );
 }

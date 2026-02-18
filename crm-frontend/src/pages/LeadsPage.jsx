@@ -55,75 +55,91 @@ export default function LeadsPage() {
     }
 
     return (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in max-w-6xl mx-auto">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Leads</h1>
-                    <p className="text-slate-400 text-sm mt-1">{leads.length} total leads</p>
+                    <h1 className="text-4xl font-bold text-white tracking-tight">Leads</h1>
+                    <p className="text-slate-400 text-base mt-2 font-medium">{leads.length} total leads</p>
                 </div>
-                <button className="btn-primary" onClick={() => setShowForm(true)}>
-                    + New Lead
+                <button className="btn-primary shadow-lg shadow-indigo-500/20 px-6 py-3" onClick={() => setShowForm(true)}>
+                    <span className="text-xl leading-none mb-0.5">+</span> New Lead
                 </button>
             </div>
 
             {/* Search bar */}
-            <div className="mb-6">
-                <input
-                    className="input-field max-w-md"
-                    placeholder="🔍  Search by name, email, or company…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
+            <div className="mb-10">
+                <div className="relative max-w-md group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span className="text-slate-500 group-focus-within:text-indigo-400 transition-colors">🔍</span>
+                    </div>
+                    <input
+                        className="input-field pl-12 py-3.5 shadow-sm bg-slate-800/50 border-slate-700 focus:bg-slate-800 transition-all"
+                        placeholder="Search by name, email, or company…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
             </div>
 
             {/* Loading */}
             {loading ? (
-                <div className="text-center py-20 text-slate-400">Loading leads…</div>
+                <div className="text-center py-24">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+                    <p className="text-slate-400">Loading leads…</p>
+                </div>
             ) : leads.length === 0 ? (
-                <div className="glass-card p-12 text-center">
-                    <p className="text-4xl mb-3">🎯</p>
-                    <p className="text-slate-400">
-                        {search ? 'No leads match your search.' : 'No leads yet. Create your first one!'}
+                <div className="glass-card p-16 text-center max-w-lg mx-auto mt-8 border border-white/5 bg-slate-800/40">
+                    <div className="w-20 h-20 bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <span className="text-4xl opacity-80">🎯</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">No leads found</h3>
+                    <p className="text-slate-400 mb-8 leading-relaxed">
+                        {search ? 'Try adjusting your search terms to find what you looking for.' : 'Get started by creating your first lead to track potential customers.'}
                     </p>
+                    {!search && (
+                        <button className="btn-primary" onClick={() => setShowForm(true)}>
+                            Create Lead
+                        </button>
+                    )}
                 </div>
             ) : (
                 /* Leads Table */
-                <div className="glass-card overflow-hidden">
+                <div className="glass-card overflow-hidden border border-white/5 shadow-xl bg-slate-900/40 backdrop-blur-md">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-slate-700 bg-white/5 text-slate-400 text-sm">
-                                    <th className="py-3 px-4">Name</th>
-                                    <th className="py-3 px-4">Email</th>
-                                    <th className="py-3 px-4">Company</th>
-                                    <th className="py-3 px-4">Status</th>
-                                    <th className="py-3 px-4">Source</th>
-                                    <th className="py-3 px-4 text-right">Created At</th>
-                                    <th className="py-3 px-4 text-right">Actions</th>
+                                <tr className="border-b border-white/5 bg-white/[0.02] text-slate-400 text-xs uppercase tracking-wider font-semibold">
+                                    <th className="py-5 px-6">Name</th>
+                                    <th className="py-5 px-6">Email</th>
+                                    <th className="py-5 px-6">Company</th>
+                                    <th className="py-5 px-6">Status</th>
+                                    <th className="py-5 px-6">Source</th>
+                                    <th className="py-5 px-6 text-right">Created At</th>
+                                    <th className="py-5 px-6 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-white/5">
                                 {leads.map((lead) => (
-                                    <tr key={lead.id} className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
-                                        <td className="py-3 px-4 font-medium text-white">
+                                    <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <td className="py-5 px-6 font-medium text-slate-200">
                                             <Link to={`/leads/${lead.id}`} className="hover:text-indigo-400 transition-colors">
                                                 {lead.first_name} {lead.last_name}
                                             </Link>
                                         </td>
-                                        <td className="py-3 px-4 text-slate-400">{lead.email}</td>
-                                        <td className="py-3 px-4 text-slate-400">{lead.company || '-'}</td>
-                                        <td className="py-3 px-4">
-                                            <span className={`badge badge-${STATUS_COLORS[lead.status] || 'gray'}`}>
+                                        <td className="py-5 px-6 text-slate-400">{lead.email}</td>
+                                        <td className="py-5 px-6 text-slate-400">{lead.company || <span className="text-slate-600 italic">None</span>}</td>
+                                        <td className="py-5 px-6">
+                                            <span className={`badge badge-${STATUS_COLORS[lead.status] || 'gray'} shadow-sm`}>
                                                 {lead.status}
                                             </span>
                                         </td>
-                                        <td className="py-3 px-4 text-slate-400">{lead.source || '-'}</td>
-                                        <td className="py-3 px-4 text-right text-slate-500 text-sm">
+                                        <td className="py-5 px-6 text-slate-400">{lead.source || '-'}</td>
+                                        <td className="py-5 px-6 text-right text-slate-500 text-sm tabular-nums">
                                             {new Date(lead.created_at).toLocaleDateString()}
                                         </td>
-                                        <td className="py-3 px-4 text-right">
-                                            <Link to={`/leads/${lead.id}`} className="text-sm text-indigo-400 hover:text-indigo-300">
+                                        <td className="py-5 px-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Link to={`/leads/${lead.id}`} className="text-sm font-medium text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded hover:bg-indigo-500/10 transition-colors">
                                                 View
                                             </Link>
                                         </td>

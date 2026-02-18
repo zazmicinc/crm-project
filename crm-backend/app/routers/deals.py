@@ -6,10 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Deal, Contact, Pipeline, Stage, StageChange
+from app.models import Deal, Contact, Pipeline, Stage, StageChange, Note, Activity
 from app.schemas import (
     DealCreate, DealUpdate, DealResponse,
-    DealMove, StageChangeResponse
+    DealMove, StageChangeResponse, TimelineEvent, TimelineEventType,
+    NoteResponse, ActivityResponse
 )
 
 router = APIRouter(prefix="/api/deals", tags=["Deals"])
@@ -155,3 +156,51 @@ def get_deal_stage_history(deal_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Deal not found")
         
     return db.query(StageChange).filter(StageChange.deal_id == deal_id).order_by(StageChange.changed_at.desc()).all()
+
+
+@router.get("/{deal_id}/timeline", response_model=list[TimelineEvent])
+def get_deal_timeline(deal_id: int, db: Session = Depends(get_db)):
+    """Get a unified timeline of events for a deal."""
+    deal = db.query(Deal).filter(Deal.id == deal_id).first()
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+
+    events = []
+
+    # 1. Notes
+    notes = db.query(Note).filter(
+        Note.related_to_type == "deal",
+        Note.related_to_id == deal_id
+    ).all()
+    for note in notes:
+        events.append({
+            "id": note.id,
+            "type": TimelineEventType.note,
+            "timestamp": note.created_at,
+            "data": NoteResponse.model_validate(note).model_dump()
+        })
+
+    # 2. Activities (Directly linked to deal, added in Phase 5)
+    activities = db.query(Activity).filter(Activity.deal_id == deal_id).all()
+    for activity in activities:
+        events.append({
+            "id": activity.id,
+            "type": TimelineEventType.activity,
+            "timestamp": activity.date,
+            "data": ActivityResponse.model_validate(activity).model_dump()
+        })
+
+    # 3. Stage Changes
+    stage_changes = db.query(StageChange).filter(StageChange.deal_id == deal_id).all()
+    for change in stage_changes:
+        events.append({
+            "id": change.id,
+            "type": TimelineEventType.stage_change,
+            "timestamp": change.changed_at,
+            "data": StageChangeResponse.model_validate(change).model_dump()
+        })
+
+    # Sort by timestamp descending
+    events.sort(key=lambda x: x["timestamp"], reverse=True)
+    
+    return events

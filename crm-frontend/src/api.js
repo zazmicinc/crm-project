@@ -32,6 +32,7 @@ export const contactsApi = {
     create: (data) => request('/contacts/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/contacts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/contacts/${id}`, { method: 'DELETE' }),
+    getTimeline: (id) => request(`/contacts/${id}/timeline`),
 };
 
 // ── Deals ────────────────────────────────────────────────────────────────────
@@ -46,6 +47,7 @@ export const dealsApi = {
     update: (id, data) => request(`/deals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/deals/${id}`, { method: 'DELETE' }),
     move: (id, stage_id) => request(`/deals/${id}/move`, { method: 'POST', body: JSON.stringify({ stage_id }) }),
+    getTimeline: (id) => request(`/deals/${id}/timeline`),
 };
 
 // ── Activities ───────────────────────────────────────────────────────────────
@@ -59,6 +61,19 @@ export const activitiesApi = {
     create: (data) => request('/activities/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/activities/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/activities/${id}`, { method: 'DELETE' }),
+};
+
+// ── Notes ────────────────────────────────────────────────────────────────────
+
+export const notesApi = {
+    list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/notes/${qs ? '?' + qs : ''}`);
+    },
+    get: (id) => request(`/notes/${id}`),
+    create: (data) => request('/notes/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/notes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/notes/${id}`, { method: 'DELETE' }),
 };
 
 // ── Accounts ─────────────────────────────────────────────────────────────────

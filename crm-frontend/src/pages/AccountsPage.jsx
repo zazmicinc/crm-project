@@ -63,81 +63,106 @@ export default function AccountsPage() {
     }
 
     return (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in max-w-6xl mx-auto">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Accounts</h1>
-                    <p className="text-slate-400 text-sm mt-1">{accounts.length} total accounts</p>
+                    <h1 className="text-4xl font-bold text-white tracking-tight">Accounts</h1>
+                    <p className="text-slate-400 text-base mt-2 font-medium">{accounts.length} total accounts</p>
                 </div>
-                <button className="btn-primary" onClick={() => setShowForm(true)}>
-                    + New Account
+                <button className="btn-primary shadow-lg shadow-indigo-500/20 px-6 py-3" onClick={() => setShowForm(true)}>
+                    <span className="text-xl leading-none mb-0.5">+</span> New Account
                 </button>
             </div>
 
             {/* Search bar */}
-            <div className="mb-6">
-                <input
-                    className="input-field max-w-md"
-                    placeholder="🔍  Search by name or industry…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
+            <div className="mb-10">
+                <div className="relative max-w-md group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span className="text-slate-500 group-focus-within:text-indigo-400 transition-colors">🔍</span>
+                    </div>
+                    <input
+                        className="input-field pl-12 py-3.5 shadow-sm bg-slate-800/50 border-slate-700 focus:bg-slate-800 transition-all"
+                        placeholder="Search by name or industry…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
             </div>
 
             {/* Loading */}
             {loading ? (
-                <div className="text-center py-20 text-slate-400">Loading accounts…</div>
+                <div className="text-center py-24">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+                    <p className="text-slate-400">Loading accounts…</p>
+                </div>
             ) : accounts.length === 0 ? (
-                <div className="glass-card p-12 text-center">
-                    <p className="text-4xl mb-3">🏢</p>
-                    <p className="text-slate-400">
-                        {search ? 'No accounts match your search.' : 'No accounts yet. Create your first one!'}
+                <div className="glass-card p-16 text-center max-w-lg mx-auto mt-8 border border-white/5 bg-slate-800/40">
+                    <div className="w-20 h-20 bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <span className="text-4xl opacity-80">🏢</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">No accounts found</h3>
+                    <p className="text-slate-400 mb-8 leading-relaxed">
+                        {search ? 'Try adjusting your search terms.' : 'No accounts yet. Create your first one to organize your customer base.'}
                     </p>
+                    {!search && (
+                        <button className="btn-primary" onClick={() => setShowForm(true)}>
+                            Create Account
+                        </button>
+                    )}
                 </div>
             ) : (
                 /* Account cards */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {accounts.map((a, i) => (
                         <div
                             key={a.id}
-                            className="glass-card p-5 animate-slide-up"
+                            className="glass-card p-6 animate-slide-up hover:scale-[1.02] transition-transform duration-200"
                             style={{ animationDelay: `${i * 0.04}s` }}
                         >
-                            <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-start justify-between mb-4">
                                 <Link
                                     to={`/accounts/${a.id}`}
-                                    className="text-lg font-semibold text-white hover:text-indigo-400 transition-colors"
+                                    className="text-xl font-bold text-white hover:text-indigo-400 transition-colors tracking-tight"
                                 >
                                     {a.name}
                                 </Link>
                                 <div className="flex gap-1">
                                     <button
                                         onClick={() => setEditingAccount(a)}
-                                        className="text-slate-500 hover:text-indigo-400 transition-colors text-sm px-2 py-1 rounded hover:bg-white/5"
+                                        className="text-slate-500 hover:text-indigo-400 transition-colors text-sm p-1.5 rounded hover:bg-white/5"
+                                        title="Edit"
                                     >
                                         ✏️
                                     </button>
                                     <button
                                         onClick={() => handleDelete(a.id)}
-                                        className="text-slate-500 hover:text-red-400 transition-colors text-sm px-2 py-1 rounded hover:bg-white/5"
+                                        className="text-slate-500 hover:text-red-400 transition-colors text-sm p-1.5 rounded hover:bg-white/5"
+                                        title="Delete"
                                     >
                                         🗑️
                                     </button>
                                 </div>
                             </div>
-                            <div className="space-y-1.5 text-sm text-slate-400">
+                            <div className="space-y-2 text-sm text-slate-400">
                                 {a.industry && (
-                                    <p>
-                                        <span className="badge badge-qualification">{a.industry}</span>
-                                    </p>
+                                    <div className="pb-1">
+                                        <span className="badge badge-qualification shadow-sm text-[0.7rem]">{a.industry}</span>
+                                    </div>
                                 )}
                                 {a.website && (
-                                    <p>
-                                        🌐 <a href={a.website} target="_blank" rel="noreferrer" className="hover:text-indigo-400">{a.website}</a>
+                                    <p className="flex items-center gap-2 truncate">
+                                        <span className="opacity-50 text-xs">🌐</span>
+                                        <a href={a.website} target="_blank" rel="noreferrer" className="hover:text-indigo-400 truncate">
+                                            {a.website.replace(/^https?:\/\//, '')}
+                                        </a>
                                     </p>
                                 )}
-                                {a.phone && <p>📞 {a.phone}</p>}
+                                {a.phone && (
+                                    <p className="flex items-center gap-2">
+                                        <span className="opacity-50 text-xs">📞</span> {a.phone}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     ))}
