@@ -1,10 +1,11 @@
 """Pydantic schemas for request validation and response serialization."""
 
+import json
 from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
 
 # ── Enums ────────────────────────────────────────────────────────────────────
@@ -382,6 +383,16 @@ class RoleBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
     permissions: list[str] = Field(default_factory=list)
 
+    @field_validator('permissions', mode='before')
+    @classmethod
+    def parse_permissions(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return []
+        return v
+
 
 class RoleCreate(RoleBase):
     pass
@@ -396,8 +407,8 @@ class RoleResponse(RoleBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class UserBase(BaseModel):
