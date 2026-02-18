@@ -68,7 +68,7 @@ export default function DealsPage() {
 
     return (
         <div className="crm-page-container">
-            <div className="crm-page-content">
+            <div className="crm-page-content-fluid">
                 {/* Header */}
                 <div className="crm-page-header">
                     <div>
@@ -91,7 +91,7 @@ export default function DealsPage() {
                         {groupedDeals.map((stage) => (
                             <div
                                 key={stage.key}
-                                className={`min-w-[280px] flex-1 snap-start rounded-[12px] bg-[rgba(15,23,42,0.3)] border border-white/5 p-4 bg-gradient-to-b ${stage.color}`}
+                                className={`min-w-[280px] flex-1 snap-start rounded-[12px] bg-[rgba(15,23,42,0.3)] border border-white/5 p-6 bg-gradient-to-b ${stage.color}`}
                             >
                                 {/* Column header */}
                                 <div className="flex items-center justify-between mb-4">

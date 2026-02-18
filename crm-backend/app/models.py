@@ -155,6 +155,10 @@ class Deal(Base):
     def account_name(self):
         return self.account.name if self.account else None
 
+    @property
+    def contact_name(self):
+        return self.contact.name if self.contact else None
+
 
 class Activity(Base):
     """An activity log entry (call, email, meeting) linked to an entity."""

@@ -85,8 +85,9 @@ export default function Layout({ children }) {
         <div className="min-h-screen flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
             {/* ── Top nav bar ────────────────────────────────────────────── */}
             <header className="sticky top-0 z-50 glass-card rounded-none border-x-0 border-t-0 border-b border-white/5 h-[72px] px-6 lg:px-8 flex items-center justify-between shadow-lg backdrop-blur-xl bg-slate-900/70">
-                <div className="flex items-center gap-6 flex-1">
-                    <Link to="/" className="flex items-center gap-3 shrink-0">
+                {/* Left: Logo */}
+                <div className="flex items-center shrink-0 w-[240px]">
+                    <Link to="/" className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg font-bold shadow-glow text-white">
                             C
                         </div>
@@ -94,14 +95,14 @@ export default function Layout({ children }) {
                             CRM Suite
                         </h1>
                     </Link>
+                </div>
 
+                {/* Center: Search & Desktop Nav */}
+                <div className="flex-1 flex items-center justify-center gap-8 max-w-5xl">
                     {/* Global Search */}
-                    <div className="relative max-w-md w-full ml-4 hidden sm:block" ref={searchRef}>
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-slate-500 text-xs">🔍</span>
-                        </div>
+                    <div className="crm-nav-search hidden sm:block w-full max-w-sm" ref={searchRef}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                         <input
-                            className="w-full bg-slate-800/40 border border-white/5 rounded-full py-2 pl-9 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-slate-800/60 transition-all"
                             placeholder="Search everything..."
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
@@ -149,14 +150,14 @@ export default function Layout({ children }) {
                     </div>
 
                     {/* Desktop nav */}
-                    <nav className="hidden xl:flex gap-1.5 ml-6">
+                    <nav className="hidden xl:flex items-center gap-2">
                         {navItems.map((item) => {
                             const active = isActive(item.path);
                             return (
                                 <Link
                                     key={item.path}
                                     to={item.path}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                                    className={`px-4 py-2.5 rounded-lg text-[15px] font-medium transition-all duration-200 flex items-center gap-2.5 ${
                                         active
                                             ? 'bg-indigo-500/10 text-indigo-300 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.2)]'
                                             : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -170,7 +171,8 @@ export default function Layout({ children }) {
                     </nav>
                 </div>
 
-                <div className="flex items-center gap-4 ml-4">
+                {/* Right: User & Actions */}
+                <div className="flex items-center justify-end gap-4 w-[240px]">
                     {/* Compact nav for smaller desktops */}
                     <nav className="hidden md:flex xl:hidden gap-1">
                         {navItems.map(item => (

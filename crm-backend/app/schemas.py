@@ -137,18 +137,6 @@ class DealResponse(DealBase):
     account_name: Optional[str] = None
     contact_name: Optional[str] = None
 
-    @property
-    def account_name(self) -> Optional[str]:
-        if hasattr(self, "account") and self.account:
-            return self.account.name
-        return None
-
-    @property
-    def contact_name(self) -> Optional[str]:
-        if hasattr(self, "contact") and self.contact:
-            return self.contact.name
-        return None
-
 
 # ── Activity Schemas ─────────────────────────────────────────────────────────
 
