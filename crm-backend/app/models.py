@@ -116,3 +116,44 @@ class Activity(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     contact = relationship("Contact", back_populates="activities")
+
+
+class Lead(Base):
+    """A potential customer or prospect."""
+
+    __tablename__ = "leads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String(255), nullable=False)
+    last_name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False, index=True)
+    phone = Column(String(50), nullable=True)
+    company = Column(String(255), nullable=True)
+    status = Column(
+        Enum(
+            "New",
+            "Contacted",
+            "Qualified",
+            "Converted",
+            "Dead",
+            name="lead_status",
+        ),
+        nullable=False,
+        default="New",
+    )
+    source = Column(String(255), nullable=True)
+    owner_id = Column(Integer, nullable=True)
+    converted_at = Column(DateTime, nullable=True)
+    converted_to_contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)
+    converted_to_account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
+    converted_to_deal_id = Column(Integer, ForeignKey("deals.id"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    contact = relationship("Contact", foreign_keys=[converted_to_contact_id])
+    account = relationship("Account", foreign_keys=[converted_to_account_id])
+    deal = relationship("Deal", foreign_keys=[converted_to_deal_id])

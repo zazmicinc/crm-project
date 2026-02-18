@@ -74,3 +74,17 @@ export const accountsApi = {
     getContacts: (id) => request(`/accounts/${id}/contacts`),
     getDeals: (id) => request(`/accounts/${id}/deals`),
 };
+
+// ── Leads ────────────────────────────────────────────────────────────────────
+
+export const leadsApi = {
+    list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/leads/${qs ? '?' + qs : ''}`);
+    },
+    get: (id) => request(`/leads/${id}`),
+    create: (data) => request('/leads/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/leads/${id}`, { method: 'DELETE' }),
+    convert: (id, data) => request(`/leads/${id}/convert`, { method: 'POST', body: JSON.stringify(data) }),
+};

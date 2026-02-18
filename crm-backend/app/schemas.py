@@ -25,6 +25,14 @@ class ActivityType(str, Enum):
     meeting = "meeting"
 
 
+class LeadStatus(str, Enum):
+    New = "New"
+    Contacted = "Contacted"
+    Qualified = "Qualified"
+    Converted = "Converted"
+    Dead = "Dead"
+
+
 # ── Account Schemas ──────────────────────────────────────────────────────────
 
 
@@ -153,3 +161,68 @@ class ActivityResponse(ActivityBase):
     id: int
     date: datetime
     created_at: datetime
+# ── Lead Schemas ─────────────────────────────────────────────────────────────
+
+
+class LeadBase(BaseModel):
+    first_name: str = Field(..., min_length=1, max_length=255, examples=["John"])
+    last_name: str = Field(..., min_length=1, max_length=255, examples=["Doe"])
+    email: EmailStr = Field(..., examples=["john.doe@example.com"])
+    phone: Optional[str] = Field(None, max_length=50, examples=["+1-555-0100"])
+    company: Optional[str] = Field(None, max_length=255, examples=["Acme Corp"])
+    status: LeadStatus = Field(LeadStatus.New, examples=["New"])
+    source: Optional[str] = Field(None, max_length=255, examples=["Website"])
+    owner_id: Optional[int] = Field(None, examples=[1])
+
+
+class LeadCreate(LeadBase):
+    pass
+
+
+class LeadUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = Field(None, max_length=50)
+    company: Optional[str] = Field(None, max_length=255)
+    status: Optional[LeadStatus] = None
+    source: Optional[str] = Field(None, max_length=255)
+    owner_id: Optional[int] = None
+
+
+class LeadResponse(LeadBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    converted_at: Optional[datetime] = None
+    converted_to_contact_id: Optional[int] = None
+    converted_to_account_id: Optional[int] = None
+    converted_to_deal_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class LeadConvertContact(BaseModel):
+    name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    company: Optional[str] = None
+
+
+class LeadConvertAccount(BaseModel):
+    name: str
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+
+class LeadConvertDeal(BaseModel):
+    title: str
+    value: float
+    stage: DealStage
+
+
+class LeadConvert(BaseModel):
+    """Payload for converting a lead."""
+    contact: Optional[LeadConvertContact] = None
+    account: Optional[LeadConvertAccount] = None
+    deal: Optional[LeadConvertDeal] = None
