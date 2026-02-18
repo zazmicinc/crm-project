@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { accountsApi } from '../api';
+import AssignOwner from '../components/AssignOwner';
+import Timeline from '../components/Timeline';
 
 export default function AccountDetailPage() {
     const { id } = useParams();
@@ -11,35 +13,44 @@ export default function AccountDetailPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('contacts');
 
+    const fetchData = async () => {
+        try {
+            const [accData, contactsData, dealsData] = await Promise.all([
+                accountsApi.get(id),
+                accountsApi.getContacts(id),
+                accountsApi.getDeals(id)
+            ]);
+            setAccount(accData);
+            setContacts(contactsData);
+            setDeals(dealsData);
+        } catch (err) {
+            console.error(err);
+            if (err.message.includes('404')) navigate('/accounts');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [accData, contactsData, dealsData] = await Promise.all([
-                    accountsApi.get(id),
-                    accountsApi.getContacts(id),
-                    accountsApi.getDeals(id)
-                ]);
-                setAccount(accData);
-                setContacts(contactsData);
-                setDeals(dealsData);
-            } catch (err) {
-                console.error(err);
-                if (err.message.includes('404')) navigate('/accounts');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, [id, navigate]);
+
+    const handleAssign = async (userId) => {
+        await accountsApi.assign(id, userId);
+        fetchData();
+    };
 
     if (loading) return <div className="text-center py-20 text-slate-400">Loading account details…</div>;
     if (!account) return null;
 
     return (
         <div className="animate-fade-in max-w-4xl mx-auto">
-            <button onClick={() => navigate('/accounts')} className="mb-4 text-slate-400 hover:text-white transition-colors flex items-center gap-2">
-                ← Back to Accounts
-            </button>
+            <div className="mb-4 flex items-center justify-between">
+                <button onClick={() => navigate('/accounts')} className="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+                    ← Back to Accounts
+                </button>
+                <AssignOwner currentOwnerId={account.owner_id} onAssign={handleAssign} />
+            </div>
 
             {/* Account Header */}
             <div className="glass-card p-8 mb-8 relative overflow-hidden">
@@ -81,10 +92,10 @@ export default function AccountDetailPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-6 border-b border-slate-700 mb-6">
+            <div className="flex gap-6 border-b border-slate-700 mb-6 overflow-x-auto">
                 <button
                     onClick={() => setActiveTab('contacts')}
-                    className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+                    className={`pb-3 px-1 text-sm font-medium transition-colors relative shrink-0 ${
                         activeTab === 'contacts' ? 'text-cyan-400' : 'text-slate-400 hover:text-slate-200'
                     }`}
                 >
@@ -95,13 +106,24 @@ export default function AccountDetailPage() {
                 </button>
                 <button
                     onClick={() => setActiveTab('deals')}
-                    className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+                    className={`pb-3 px-1 text-sm font-medium transition-colors relative shrink-0 ${
                         activeTab === 'deals' ? 'text-emerald-400' : 'text-slate-400 hover:text-slate-200'
                     }`}
                 >
                     Deals ({deals.length})
                     {activeTab === 'deals' && (
                         <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-400 rounded-t-full" />
+                    )}
+                </button>
+                <button
+                    onClick={() => setActiveTab('timeline')}
+                    className={`pb-3 px-1 text-sm font-medium transition-colors relative shrink-0 ${
+                        activeTab === 'timeline' ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                >
+                    Timeline
+                    {activeTab === 'timeline' && (
+                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 rounded-t-full" />
                     )}
                 </button>
             </div>
@@ -176,6 +198,10 @@ export default function AccountDetailPage() {
                             </table>
                         </div>
                     )
+                )}
+
+                {activeTab === 'timeline' && (
+                    <Timeline relatedToType="account" relatedToId={id} />
                 )}
             </div>
         </div>

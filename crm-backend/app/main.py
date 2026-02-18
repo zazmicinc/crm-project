@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.database import engine, Base
-from app.routers import contacts, deals, activities, accounts, leads, pipelines, notes
+from app.routers import contacts, deals, activities, accounts, leads, pipelines, notes, auth, users, roles, dashboard, search
 
 
 @asynccontextmanager
@@ -39,6 +39,11 @@ app.add_middleware(
 
 # ── Routers ──────────────────────────────────────────────────────────────────
 
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(roles.router)
+app.include_router(dashboard.router)
+app.include_router(search.router)
 app.include_router(contacts.router)
 app.include_router(deals.router)
 app.include_router(activities.router)

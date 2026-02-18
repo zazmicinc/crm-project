@@ -126,26 +126,16 @@ export default function KanbanBoardPage() {
                                                                 snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500 rotate-2' : ''
                                                             }`}
                                                         >
-                                                            <Link to={`/deals`} className="block group-hover:text-indigo-300 transition-colors font-medium mb-2">
+                                                            <Link to={`/deals/${deal.id}`} className="block group-hover:text-indigo-300 transition-colors font-medium mb-2">
                                                                 {deal.title}
                                                             </Link>
                                                             <div className="flex justify-between items-end text-sm">
                                                                 <div className="text-emerald-400 font-mono">
                                                                     ${deal.value?.toLocaleString()}
                                                                 </div>
-                                                                {deal.contact_id && ( // Assuming we have contact name available if populated, else maybe just show ID or fetch
-                                                                    // The list API might not include contact name. 
-                                                                    // Wait, DealResponse doesn't explicitly have contact_name.
-                                                                    // But let's check schemas.py... DealResponse has account_name prop but not contact_name.
-                                                                    // I should assume minimal info or maybe contact_id is all we have.
-                                                                    // Requirement said: "Each card shows deal name, value, contact name."
-                                                                    // My backend DealResponse doesn't have contact name.
-                                                                    // I can add it to the schema in the next step or just ignore for now.
-                                                                    // I'll assume for now I display what I have.
-                                                                    <div className="text-slate-500 text-xs">
-                                                                        Contact #{deal.contact_id}
-                                                                    </div>
-                                                                )}
+                                                                <div className="text-slate-500 text-xs">
+                                                                    {deal.contact_name || `ID #${deal.contact_id}`}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}

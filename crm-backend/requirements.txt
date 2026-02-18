@@ -4,3 +4,7 @@ sqlalchemy
 pydantic[email]
 pytest
 httpx
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+bcrypt==3.2.0

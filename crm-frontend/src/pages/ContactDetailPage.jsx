@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { contactsApi, dealsApi, activitiesApi } from '../api';
 import ContactForm from '../components/ContactForm';
 import Timeline from '../components/Timeline';
+import AssignOwner from '../components/AssignOwner';
 
 export default function ContactDetailPage() {
     const { id } = useParams();
@@ -40,6 +41,11 @@ export default function ContactDetailPage() {
         fetchData();
     };
 
+    const handleAssign = async (userId) => {
+        await contactsApi.assign(id, userId);
+        fetchData();
+    };
+
     const handleDelete = async () => {
         if (!confirm('Delete this contact?')) return;
         await contactsApi.delete(id);
@@ -65,10 +71,11 @@ export default function ContactDetailPage() {
     return (
         <div className="animate-fade-in">
             {/* Breadcrumb */}
-            <div className="mb-6">
+            <div className="mb-6 flex items-center justify-between">
                 <Link to="/" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors">
                     ← Back to Contacts
                 </Link>
+                <AssignOwner currentOwnerId={contact.owner_id} onAssign={handleAssign} />
             </div>
 
             {/* Contact Header */}

@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { leadsApi } from '../api';
 import LeadForm from '../components/LeadForm';
 import LeadConvertModal from '../components/LeadConvertModal';
+import AssignOwner from '../components/AssignOwner';
+import Timeline from '../components/Timeline';
 
 const STATUS_COLORS = {
     New: 'blue',
@@ -19,6 +21,7 @@ export default function LeadDetailPage() {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [showConvertModal, setShowConvertModal] = useState(false);
+    const [activeTab, setActiveTab] = useState('overview');
 
     const fetchLead = useCallback(async () => {
         try {
@@ -42,6 +45,11 @@ export default function LeadDetailPage() {
         fetchLead();
     };
 
+    const handleAssign = async (userId) => {
+        await leadsApi.assign(id, userId);
+        fetchLead();
+    };
+
     const handleDelete = async () => {
         if (!confirm('Delete this lead?')) return;
         await leadsApi.delete(id);
@@ -49,25 +57,11 @@ export default function LeadDetailPage() {
     };
 
     const handleConvert = async () => {
-        // The modal calls this.
-        // We'll call the API then redirect to the new deal.
         const res = await leadsApi.convert(id, {});
-        // Success! Redirect to new deal.
-        // Assuming res contains deal_id or we can deduce it.
-        // The backend returns { status: 'success', deal_id: ... }
         if (res.deal_id) {
-            navigate(`/deals`); // Ideally we'd go to specific deal, but let's go to list or filter.
-            // Or if we have a deals detail page? Yes, /deals is list.
-            // But we can go to /deals?search=Title to simulate finding it, or just /deals.
-            // Let's assume we can't deep link to detail yet (or we can if we check router).
-            // We have DealsPage. We don't have DealDetailPage implemented in Phase 1/2?
-            // Actually, Phase 1 requirements didn't specify Deal Detail page explicitly,
-            // but Contacts has one.
-            // Wait, looking at file list: DealsPage.jsx exists. No DealDetailPage.
-            // So we redirect to /deals.
-            navigate('/deals');
+            navigate(`/deals/${res.deal_id}`);
         } else {
-            navigate('/leads');
+            navigate('/deals');
         }
     };
 
@@ -88,11 +82,14 @@ export default function LeadDetailPage() {
 
     return (
         <div className="animate-fade-in max-w-4xl mx-auto">
-            <button onClick={() => navigate('/leads')} className="mb-4 text-slate-400 hover:text-white transition-colors flex items-center gap-2">
-                ← Back to Leads
-            </button>
+            <div className="mb-4 flex items-center justify-between">
+                <button onClick={() => navigate('/leads')} className="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+                    ← Back to Leads
+                </button>
+                <AssignOwner currentOwnerId={lead.owner_id} onAssign={handleAssign} />
+            </div>
 
-            <div className="glass-card p-8 relative overflow-hidden">
+            <div className="glass-card p-8 relative overflow-hidden mb-6">
                 <div className={`absolute top-0 left-0 w-full h-1 bg-${STATUS_COLORS[lead.status] || 'gray'}-500`} />
                 
                 <div className="flex justify-between items-start mb-6">
@@ -156,6 +153,35 @@ export default function LeadDetailPage() {
                     </div>
                 )}
             </div>
+
+            {/* Tabs */}
+            <div className="flex gap-6 border-b border-slate-700/50 mb-6 px-1">
+                <button
+                    className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+                        activeTab === 'overview' ? 'text-indigo-400 border-indigo-400' : 'text-slate-400 border-transparent hover:text-white'
+                    }`}
+                    onClick={() => setActiveTab('overview')}
+                >
+                    Overview
+                </button>
+                <button
+                    className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+                        activeTab === 'timeline' ? 'text-indigo-400 border-indigo-400' : 'text-slate-400 border-transparent hover:text-white'
+                    }`}
+                    onClick={() => setActiveTab('timeline')}
+                >
+                    Timeline
+                </button>
+            </div>
+
+            {activeTab === 'overview' ? (
+                <div className="glass-card p-6">
+                    <h2 className="text-lg font-bold mb-4">Lead Overview</h2>
+                    <p className="text-slate-400 text-sm">Additional details and custom fields will appear here.</p>
+                </div>
+            ) : (
+                <Timeline relatedToType="lead" relatedToId={id} />
+            )}
 
             {showConvertModal && (
                 <LeadConvertModal

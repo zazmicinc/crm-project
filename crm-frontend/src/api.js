@@ -4,14 +4,23 @@ const API_BASE = '/api';
 
 async function request(path, options = {}) {
     const url = `${API_BASE}${path}`;
+    const token = localStorage.getItem('token');
+    
     const config = {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+        },
         ...options,
     };
 
     const res = await fetch(url, config);
 
     if (res.status === 204) return null;
+
+    if (res.status === 401) {
+        localStorage.removeItem('token');
+    }
 
     if (!res.ok) {
         const error = await res.json().catch(() => ({ detail: 'Request failed' }));
@@ -20,6 +29,45 @@ async function request(path, options = {}) {
 
     return res.json();
 }
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+export const authApi = {
+    login: (username, password) => {
+        const formData = new URLSearchParams();
+        formData.append('username', username);
+        formData.append('password', password);
+
+        return request('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData,
+        });
+    },
+    me: () => request('/auth/me'),
+    logout: () => request('/auth/logout', { method: 'POST' }),
+};
+
+// ── Users & Roles (Admin Only) ───────────────────────────────────────────────
+
+export const usersApi = {
+    list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/users/${qs ? '?' + qs : ''}`);
+    },
+    get: (id) => request(`/users/${id}`),
+    create: (data) => request('/users/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+};
+
+export const rolesApi = {
+    list: () => request('/roles/'),
+    get: (id) => request(`/roles/${id}`),
+    create: (data) => request('/roles/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/roles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/roles/${id}`, { method: 'DELETE' }),
+};
 
 // ── Contacts ─────────────────────────────────────────────────────────────────
 
@@ -32,6 +80,7 @@ export const contactsApi = {
     create: (data) => request('/contacts/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/contacts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/contacts/${id}`, { method: 'DELETE' }),
+    assign: (id, userId) => request(`/contacts/${id}/assign`, { method: 'PUT', body: JSON.stringify({ user_id: userId }) }),
     getTimeline: (id) => request(`/contacts/${id}/timeline`),
 };
 
@@ -46,6 +95,7 @@ export const dealsApi = {
     create: (data) => request('/deals/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/deals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/deals/${id}`, { method: 'DELETE' }),
+    assign: (id, userId) => request(`/deals/${id}/assign`, { method: 'PUT', body: JSON.stringify({ user_id: userId }) }),
     move: (id, stage_id) => request(`/deals/${id}/move`, { method: 'POST', body: JSON.stringify({ stage_id }) }),
     getTimeline: (id) => request(`/deals/${id}/timeline`),
 };
@@ -87,8 +137,10 @@ export const accountsApi = {
     create: (data) => request('/accounts/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/accounts/${id}`, { method: 'DELETE' }),
+    assign: (id, userId) => request(`/accounts/${id}/assign`, { method: 'PUT', body: JSON.stringify({ user_id: userId }) }),
     getContacts: (id) => request(`/accounts/${id}/contacts`),
     getDeals: (id) => request(`/accounts/${id}/deals`),
+    getTimeline: (id) => request(`/accounts/${id}/timeline`),
 };
 
 // ── Leads ────────────────────────────────────────────────────────────────────
@@ -102,7 +154,23 @@ export const leadsApi = {
     create: (data) => request('/leads/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/leads/${id}`, { method: 'DELETE' }),
+    assign: (id, userId) => request(`/leads/${id}/assign`, { method: 'PUT', body: JSON.stringify({ user_id: userId }) }),
     convert: (id, data) => request(`/leads/${id}/convert`, { method: 'POST', body: JSON.stringify(data) }),
+    getTimeline: (id) => request(`/leads/${id}/timeline`),
+};
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+
+export const dashboardApi = {
+    getSummary: () => request('/dashboard/summary'),
+    getFunnel: () => request('/dashboard/funnel'),
+    getActivityStats: () => request('/dashboard/activity-stats'),
+};
+
+// ── Search ───────────────────────────────────────────────────────────────────
+
+export const searchApi = {
+    global: (q) => request(`/search/?q=${encodeURIComponent(q)}`),
 };
 
 // ── Pipelines ────────────────────────────────────────────────────────────────

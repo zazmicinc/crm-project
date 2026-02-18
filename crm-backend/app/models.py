@@ -2,10 +2,54 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Enum, Boolean, JSON
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+
+
+class Role(Base):
+    """User role with permissions."""
+
+    __tablename__ = "roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), nullable=False, unique=True)
+    permissions = Column(JSON, nullable=False, default=list)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    users = relationship("User", back_populates="role")
+
+
+class User(Base):
+    """System user."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    first_name = Column(String(255), nullable=False)
+    last_name = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    role = relationship("Role", back_populates="users")
+    contacts = relationship("Contact", back_populates="owner")
+    deals = relationship("Deal", back_populates="owner")
+    accounts = relationship("Account", back_populates="owner")
+    leads = relationship("Lead", back_populates="owner")
 
 
 class Account(Base):
@@ -20,6 +64,7 @@ class Account(Base):
     phone = Column(String(50), nullable=True)
     email = Column(String(255), nullable=True)
     address = Column(Text, nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -27,8 +72,10 @@ class Account(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    owner = relationship("User", back_populates="accounts")
     contacts = relationship("Contact", back_populates="account")
     deals = relationship("Deal", back_populates="account")
+    activities = relationship("Activity", back_populates="account", cascade="all, delete-orphan")
 
 
 class Contact(Base):
@@ -43,6 +90,7 @@ class Contact(Base):
     company = Column(String(255), nullable=True, index=True)
     notes = Column(Text, nullable=True)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -50,6 +98,7 @@ class Contact(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    owner = relationship("User", back_populates="contacts")
     account = relationship("Account", back_populates="contacts")
     deals = relationship("Deal", back_populates="contact", cascade="all, delete-orphan")
     activities = relationship(
@@ -86,6 +135,7 @@ class Deal(Base):
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
     pipeline_id = Column(Integer, ForeignKey("pipelines.id"), nullable=True)
     stage_id = Column(Integer, ForeignKey("stages.id"), nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -93,6 +143,7 @@ class Deal(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    owner = relationship("User", back_populates="deals")
     contact = relationship("Contact", back_populates="deals")
     account = relationship("Account", back_populates="deals")
     pipeline = relationship("Pipeline", back_populates="deals")
@@ -106,7 +157,7 @@ class Deal(Base):
 
 
 class Activity(Base):
-    """An activity log entry (call, email, meeting) linked to a contact."""
+    """An activity log entry (call, email, meeting) linked to an entity."""
 
     __tablename__ = "activities"
 
@@ -118,12 +169,16 @@ class Activity(Base):
     subject = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     date = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False)
+    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)
     deal_id = Column(Integer, ForeignKey("deals.id"), nullable=True)
+    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
+    account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     contact = relationship("Contact", back_populates="activities")
     deal = relationship("Deal", back_populates="activities")
+    lead = relationship("Lead", back_populates="activities")
+    account = relationship("Account", back_populates="activities")
 
 
 class Lead(Base):
@@ -150,7 +205,7 @@ class Lead(Base):
         default="New",
     )
     source = Column(String(255), nullable=True)
-    owner_id = Column(Integer, nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     converted_at = Column(DateTime, nullable=True)
     converted_to_contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)
     converted_to_account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
@@ -162,9 +217,11 @@ class Lead(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    owner = relationship("User", back_populates="leads")
     contact = relationship("Contact", foreign_keys=[converted_to_contact_id])
     account = relationship("Account", foreign_keys=[converted_to_account_id])
     deal = relationship("Deal", foreign_keys=[converted_to_deal_id])
+    activities = relationship("Activity", back_populates="lead", cascade="all, delete-orphan")
 
 
 class Pipeline(Base):

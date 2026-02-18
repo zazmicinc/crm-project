@@ -134,11 +134,18 @@ class DealResponse(DealBase):
     created_at: datetime
     updated_at: datetime
     account_name: Optional[str] = None
+    contact_name: Optional[str] = None
 
     @property
     def account_name(self) -> Optional[str]:
         if hasattr(self, "account") and self.account:
             return self.account.name
+        return None
+
+    @property
+    def contact_name(self) -> Optional[str]:
+        if hasattr(self, "contact") and self.contact:
+            return self.contact.name
         return None
 
 
@@ -150,8 +157,10 @@ class ActivityBase(BaseModel):
     subject: str = Field(..., min_length=1, max_length=255, examples=["Follow-up call"])
     description: Optional[str] = Field(None, examples=["Discussed pricing options"])
     date: Optional[datetime] = Field(None, examples=["2026-02-17T10:00:00"])
-    contact_id: int = Field(..., examples=[1])
+    contact_id: Optional[int] = Field(None, examples=[1])
     deal_id: Optional[int] = Field(None, examples=[1])
+    lead_id: Optional[int] = Field(None, examples=[1])
+    account_id: Optional[int] = Field(None, examples=[1])
 
 
 class ActivityCreate(ActivityBase):
@@ -165,6 +174,8 @@ class ActivityUpdate(BaseModel):
     date: Optional[datetime] = None
     contact_id: Optional[int] = None
     deal_id: Optional[int] = None
+    lead_id: Optional[int] = None
+    account_id: Optional[int] = None
 
 
 class ActivityResponse(ActivityBase):
@@ -364,3 +375,69 @@ class TimelineEvent(BaseModel):
     type: TimelineEventType
     timestamp: datetime
     data: dict  # Full object (NoteResponse, ActivityResponse, StageChangeResponse)
+# ── Auth & User Schemas ──────────────────────────────────────────────────────
+
+
+class RoleBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50)
+    permissions: list[str] = Field(default_factory=list)
+
+
+class RoleCreate(RoleBase):
+    pass
+
+
+class RoleUpdate(BaseModel):
+    name: Optional[str] = None
+    permissions: Optional[list[str]] = None
+
+
+class RoleResponse(RoleBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class UserBase(BaseModel):
+    email: EmailStr
+    first_name: str = Field(..., min_length=1)
+    last_name: str = Field(..., min_length=1)
+    is_active: bool = True
+    role_id: int
+
+
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=6)
+
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    password: Optional[str] = None
+    role_id: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
+class UserResponse(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    role: Optional[RoleResponse] = None
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+
+class AssignOwner(BaseModel):
+    user_id: int

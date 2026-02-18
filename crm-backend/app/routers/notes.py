@@ -4,16 +4,24 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Note
+from app.models import Note, User
 from app.schemas import NoteCreate, NoteUpdate, NoteResponse, RelatedToType
+from app.auth import get_current_active_user, check_permissions
 
 router = APIRouter(prefix="/api/notes", tags=["Notes"])
 
 
 @router.post("/", response_model=NoteResponse, status_code=201)
-def create_note(note: NoteCreate, db: Session = Depends(get_db)):
+def create_note(
+    note: NoteCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Create a new note."""
-    db_note = Note(**note.model_dump())
+    if not check_permissions(current_user, "notes.create"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    db_note = Note(**note.model_dump(), created_by=current_user.id)
     db.add(db_note)
     db.commit()
     db.refresh(db_note)
@@ -27,8 +35,12 @@ def list_notes(
     related_to_type: RelatedToType = Query(None, description="Filter by related entity type"),
     related_to_id: int = Query(None, description="Filter by related entity ID"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """List all notes with optional filtering by related entity."""
+    if not check_permissions(current_user, "notes.read"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     query = db.query(Note)
 
     if related_to_type:
@@ -40,8 +52,15 @@ def list_notes(
 
 
 @router.get("/{note_id}", response_model=NoteResponse)
-def get_note(note_id: int, db: Session = Depends(get_db)):
+def get_note(
+    note_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Get a single note by ID."""
+    if not check_permissions(current_user, "notes.read"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     note = db.query(Note).filter(Note.id == note_id).first()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -49,8 +68,16 @@ def get_note(note_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{note_id}", response_model=NoteResponse)
-def update_note(note_id: int, updates: NoteUpdate, db: Session = Depends(get_db)):
+def update_note(
+    note_id: int, 
+    updates: NoteUpdate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Update an existing note."""
+    if not check_permissions(current_user, "notes.update"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     note = db.query(Note).filter(Note.id == note_id).first()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -65,8 +92,15 @@ def update_note(note_id: int, updates: NoteUpdate, db: Session = Depends(get_db)
 
 
 @router.delete("/{note_id}", status_code=204)
-def delete_note(note_id: int, db: Session = Depends(get_db)):
+def delete_note(
+    note_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Delete a note."""
+    if not check_permissions(current_user, "notes.delete"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     note = db.query(Note).filter(Note.id == note_id).first()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")

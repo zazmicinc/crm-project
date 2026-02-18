@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { dealsApi } from '../api';
 import DealForm from '../components/DealForm';
 import Timeline from '../components/Timeline';
+import AssignOwner from '../components/AssignOwner';
 
 export default function DealDetailPage() {
     const { id } = useParams();
@@ -32,6 +33,11 @@ export default function DealDetailPage() {
         fetchData();
     };
 
+    const handleAssign = async (userId) => {
+        await dealsApi.assign(id, userId);
+        fetchData();
+    };
+
     const handleDelete = async () => {
         if (!confirm('Delete this deal?')) return;
         await dealsApi.delete(id);
@@ -52,10 +58,11 @@ export default function DealDetailPage() {
     return (
         <div className="animate-fade-in">
             {/* Breadcrumb */}
-            <div className="mb-6">
+            <div className="mb-6 flex items-center justify-between">
                 <Link to="/deals" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors">
                     ← Back to Deals
                 </Link>
+                <AssignOwner currentOwnerId={deal.owner_id} onAssign={handleAssign} />
             </div>
 
             {/* Header */}

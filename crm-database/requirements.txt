@@ -1,2 +1,4 @@
 alembic==1.14.0
 sqlalchemy==2.0.35
+passlib[bcrypt]
+bcrypt==3.2.0

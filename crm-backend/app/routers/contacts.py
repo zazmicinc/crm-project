@@ -4,24 +4,35 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Contact, Note, Activity, Deal, StageChange
+from app.models import Contact, Note, Activity, Deal, StageChange, User
 from app.schemas import (
     ContactCreate, ContactUpdate, ContactResponse,
     TimelineEvent, TimelineEventType, NoteResponse,
-    ActivityResponse, StageChangeResponse
+    ActivityResponse, StageChangeResponse, AssignOwner
 )
+from app.auth import get_current_active_user, check_permissions
 
 router = APIRouter(prefix="/api/contacts", tags=["Contacts"])
 
 
 @router.post("/", response_model=ContactResponse, status_code=201)
-def create_contact(contact: ContactCreate, db: Session = Depends(get_db)):
+def create_contact(
+    contact: ContactCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Create a new contact."""
+    if not check_permissions(current_user, "contacts.create"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     existing = db.query(Contact).filter(Contact.email == contact.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="A contact with this email already exists")
 
-    db_contact = Contact(**contact.model_dump())
+    # Fixed: exclude owner_id from model_dump to avoid multiple values error
+    contact_data = contact.model_dump(exclude={"owner_id"})
+    
+    db_contact = Contact(**contact_data, owner_id=current_user.id)
     db.add(db_contact)
     db.commit()
     db.refresh(db_contact)
@@ -34,8 +45,12 @@ def list_contacts(
     limit: int = Query(100, ge=1, le=100),
     search: str = Query(None, description="Search by name, email, or company"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """List all contacts with optional search and pagination."""
+    if not check_permissions(current_user, "contacts.read"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     query = db.query(Contact)
     if search:
         pattern = f"%{search}%"
@@ -48,8 +63,15 @@ def list_contacts(
 
 
 @router.get("/{contact_id}", response_model=ContactResponse)
-def get_contact(contact_id: int, db: Session = Depends(get_db)):
+def get_contact(
+    contact_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Get a single contact by ID."""
+    if not check_permissions(current_user, "contacts.read"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     contact = db.query(Contact).filter(Contact.id == contact_id).first()
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
@@ -57,8 +79,16 @@ def get_contact(contact_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{contact_id}", response_model=ContactResponse)
-def update_contact(contact_id: int, updates: ContactUpdate, db: Session = Depends(get_db)):
+def update_contact(
+    contact_id: int, 
+    updates: ContactUpdate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Update an existing contact."""
+    if not check_permissions(current_user, "contacts.update"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     contact = db.query(Contact).filter(Contact.id == contact_id).first()
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
@@ -80,8 +110,18 @@ def update_contact(contact_id: int, updates: ContactUpdate, db: Session = Depend
 
 
 @router.delete("/{contact_id}", status_code=204)
-def delete_contact(contact_id: int, db: Session = Depends(get_db)):
+def delete_contact(
+    contact_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Delete a contact and all associated deals and activities."""
+    # Assuming delete permission is needed. Admin has '*', Sales Rep usually doesn't have delete in seed.
+    # I'll check for 'contacts.delete' explicitly.
+    # Note: Admin's '*' check in auth.py handles this if I require 'contacts.delete'.
+    if not check_permissions(current_user, "contacts.delete"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     contact = db.query(Contact).filter(Contact.id == contact_id).first()
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
@@ -90,9 +130,52 @@ def delete_contact(contact_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
+@router.put("/{contact_id}/assign", response_model=ContactResponse)
+def assign_contact_owner(
+    contact_id: int, 
+    assign: AssignOwner, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_active_user)
+):
+    """Assign a user as owner of the contact."""
+    if not check_permissions(current_user, "contacts.update"):
+         raise HTTPException(status_code=403, detail="Not enough privileges")
+    
+    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+        
+    new_owner = db.query(User).filter(User.id == assign.user_id).first()
+    if not new_owner:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    old_owner_id = contact.owner_id
+    contact.owner_id = new_owner.id
+    
+    # Log the change
+    db_note = Note(
+        content=f"Owner changed from {old_owner_id} to {new_owner.id} by {current_user.email}",
+        related_to_type="contact",
+        related_to_id=contact.id,
+        created_by=current_user.id
+    )
+    db.add(db_note)
+    
+    db.commit()
+    db.refresh(contact)
+    return contact
+
+
 @router.get("/{contact_id}/timeline", response_model=list[TimelineEvent])
-def get_contact_timeline(contact_id: int, db: Session = Depends(get_db)):
+def get_contact_timeline(
+    contact_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Get a unified timeline of events for a contact."""
+    if not check_permissions(current_user, "contacts.read"): # Or timeline.read?
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
     contact = db.query(Contact).filter(Contact.id == contact_id).first()
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")

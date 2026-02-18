@@ -184,6 +184,10 @@ export default function Timeline({ relatedToType, relatedToId }) {
                 data = await contactsApi.getTimeline(relatedToId);
             } else if (relatedToType === 'deal') {
                 data = await dealsApi.getTimeline(relatedToId);
+            } else if (relatedToType === 'lead') {
+                data = await leadsApi.getTimeline(relatedToId);
+            } else if (relatedToType === 'account') {
+                data = await accountsApi.getTimeline(relatedToId);
             }
             setEvents(data);
         } catch (err) {

@@ -6,12 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Pipeline, Stage, StageChange, Deal
+from app.models import Pipeline, Stage, StageChange, Deal, User
 from app.schemas import (
     PipelineCreate, PipelineUpdate, PipelineResponse,
     StageCreate, StageUpdate, StageResponse, StageReorder,
     DealMove, StageChangeResponse
 )
+from app.auth import get_current_active_user, get_current_admin_user
 
 router = APIRouter(prefix="/api/pipelines", tags=["Pipelines"])
 
@@ -20,8 +21,12 @@ router = APIRouter(prefix="/api/pipelines", tags=["Pipelines"])
 
 
 @router.post("/", response_model=PipelineResponse, status_code=201)
-def create_pipeline(pipeline: PipelineCreate, db: Session = Depends(get_db)):
-    """Create a new pipeline."""
+def create_pipeline(
+    pipeline: PipelineCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Create a new pipeline (Admin only)."""
     # If this is the first pipeline or marked default, handle default logic
     if pipeline.is_default:
         # Unset other defaults
@@ -39,13 +44,20 @@ def create_pipeline(pipeline: PipelineCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[PipelineResponse])
-def list_pipelines(db: Session = Depends(get_db)):
+def list_pipelines(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """List all pipelines."""
     return db.query(Pipeline).order_by(Pipeline.name).all()
 
 
 @router.get("/{pipeline_id}", response_model=PipelineResponse)
-def get_pipeline(pipeline_id: int, db: Session = Depends(get_db)):
+def get_pipeline(
+    pipeline_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """Get a pipeline by ID."""
     pipeline = db.query(Pipeline).filter(Pipeline.id == pipeline_id).first()
     if not pipeline:
@@ -54,8 +66,13 @@ def get_pipeline(pipeline_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{pipeline_id}", response_model=PipelineResponse)
-def update_pipeline(pipeline_id: int, updates: PipelineUpdate, db: Session = Depends(get_db)):
-    """Update a pipeline."""
+def update_pipeline(
+    pipeline_id: int, 
+    updates: PipelineUpdate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Update a pipeline (Admin only)."""
     pipeline = db.query(Pipeline).filter(Pipeline.id == pipeline_id).first()
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
@@ -74,15 +91,16 @@ def update_pipeline(pipeline_id: int, updates: PipelineUpdate, db: Session = Dep
 
 
 @router.delete("/{pipeline_id}", status_code=204)
-def delete_pipeline(pipeline_id: int, db: Session = Depends(get_db)):
-    """Delete a pipeline."""
+def delete_pipeline(
+    pipeline_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Delete a pipeline (Admin only)."""
     pipeline = db.query(Pipeline).filter(Pipeline.id == pipeline_id).first()
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
     
-    # Optional: Prevent delete if it has deals? Or cascade?
-    # Models have cascade="all, delete-orphan" for stages, but deals just link to it.
-    # We'll assume simple delete for now.
     db.delete(pipeline)
     db.commit()
 
@@ -91,8 +109,13 @@ def delete_pipeline(pipeline_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{pipeline_id}/stages/", response_model=StageResponse, status_code=201)
-def create_stage(pipeline_id: int, stage: StageCreate, db: Session = Depends(get_db)):
-    """Create a stage in a pipeline."""
+def create_stage(
+    pipeline_id: int, 
+    stage: StageCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Create a stage in a pipeline (Admin only)."""
     pipeline = db.query(Pipeline).filter(Pipeline.id == pipeline_id).first()
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
@@ -105,14 +128,23 @@ def create_stage(pipeline_id: int, stage: StageCreate, db: Session = Depends(get
 
 
 @router.get("/{pipeline_id}/stages/", response_model=list[StageResponse])
-def list_stages(pipeline_id: int, db: Session = Depends(get_db)):
+def list_stages(
+    pipeline_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """List stages for a pipeline."""
     return db.query(Stage).filter(Stage.pipeline_id == pipeline_id).order_by(Stage.order).all()
 
 
 @router.put("/{pipeline_id}/stages/reorder", status_code=204)
-def reorder_stages(pipeline_id: int, reorder: StageReorder, db: Session = Depends(get_db)):
-    """Reorder stages in a pipeline."""
+def reorder_stages(
+    pipeline_id: int, 
+    reorder: StageReorder, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Reorder stages in a pipeline (Admin only)."""
     # Verify pipeline exists
     pipeline = db.query(Pipeline).filter(Pipeline.id == pipeline_id).first()
     if not pipeline:
@@ -126,8 +158,14 @@ def reorder_stages(pipeline_id: int, reorder: StageReorder, db: Session = Depend
 
 
 @router.put("/{pipeline_id}/stages/{stage_id}", response_model=StageResponse)
-def update_stage(pipeline_id: int, stage_id: int, updates: StageUpdate, db: Session = Depends(get_db)):
-    """Update a stage."""
+def update_stage(
+    pipeline_id: int, 
+    stage_id: int, 
+    updates: StageUpdate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Update a stage (Admin only)."""
     stage = db.query(Stage).filter(Stage.id == stage_id, Stage.pipeline_id == pipeline_id).first()
     if not stage:
         raise HTTPException(status_code=404, detail="Stage not found")
@@ -142,8 +180,13 @@ def update_stage(pipeline_id: int, stage_id: int, updates: StageUpdate, db: Sess
 
 
 @router.delete("/{pipeline_id}/stages/{stage_id}", status_code=204)
-def delete_stage(pipeline_id: int, stage_id: int, db: Session = Depends(get_db)):
-    """Delete a stage."""
+def delete_stage(
+    pipeline_id: int, 
+    stage_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Delete a stage (Admin only)."""
     stage = db.query(Stage).filter(Stage.id == stage_id, Stage.pipeline_id == pipeline_id).first()
     if not stage:
         raise HTTPException(status_code=404, detail="Stage not found")
