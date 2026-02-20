@@ -1,28 +1,24 @@
-# ── Python/Backend ────────────────────────────────────────────────
-venv/
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-.pytest_cache/
-.coverage
-htmlcov/
-crm.db  # Exclude local SQLite database
-
-# ── Node/Frontend ──────────────────────────────────────────────────
-node_modules/
+*.egg-info/
 dist/
-.eslintcache
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# ── OS/Environment ─────────────────────────────────────────────────
+venv/
 .env
-.DS_Store
-Thumbs.db
+
+# Node
+node_modules/
+build/
+.vite/
+
+# IDE
 .vscode/
 .idea/
 
-# ── Specific to this project ───────────────────────────────────────
-crm-database/crm.db
-crm-backend/crm.db
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite3
