@@ -46,6 +46,13 @@ export const authApi = {
     },
     me: () => request('/auth/me'),
     logout: () => request('/auth/logout', { method: 'POST' }),
+    getGoogleLoginUrl: () => request('/auth/google/login'),
+    googleCallback: (code, state) => {
+        let qs = new URLSearchParams();
+        if (code) qs.append('code', code);
+        if (state) qs.append('state', state);
+        return request(`/auth/google/callback?${qs.toString()}`);
+    },
 };
 
 // ── Users & Roles (Admin Only) ───────────────────────────────────────────────

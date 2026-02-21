@@ -25,18 +25,25 @@ export function AuthProvider({ children }) {
         initAuth();
     }, []);
 
-    const login = async (email, password) => {
-        const data = await authApi.login(email, password);
-        localStorage.setItem('token', data.access_token);
-        const userData = await authApi.me();
-        setUser(userData);
-        return userData;
+    const login = async (emailOrToken, password) => {
+        if (!password) {
+            localStorage.setItem('token', emailOrToken);
+            const userData = await authApi.me();
+            setUser(userData);
+            return userData;
+        } else {
+            const data = await authApi.login(emailOrToken, password);
+            localStorage.setItem('token', data.access_token);
+            const userData = await authApi.me();
+            setUser(userData);
+            return userData;
+        }
     };
 
     const logout = async () => {
         try {
             await authApi.logout();
-        } catch (e) { 
+        } catch (e) {
             // ignore
         }
         localStorage.removeItem('token');

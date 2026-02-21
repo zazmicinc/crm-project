@@ -1,5 +1,7 @@
-"""FastAPI application entry point for the CRM system."""
+from dotenv import load_dotenv
+load_dotenv()
 
+"""FastAPI application entry point for the CRM system."""
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -56,13 +58,13 @@ app.include_router(notes.router)
 # ── Global exception handler ────────────────────────────────────────────────
 
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """Catch-all handler that returns a consistent JSON error response."""
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "An internal server error occurred."},
-    )
+#@app.exception_handler(Exception)
+#async def global_exception_handler(request: Request, exc: Exception):
+#    """Catch-all handler that returns a consistent JSON error response."""
+#    return JSONResponse(
+#        status_code=500,
+#        content={"detail": "An internal server error occurred."},
+#    )
 
 
 # ── Health check ─────────────────────────────────────────────────────────────
