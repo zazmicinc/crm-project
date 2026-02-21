@@ -374,9 +374,18 @@ class RoleBase(BaseModel):
     @field_validator('permissions', mode='before')
     @classmethod
     def parse_permissions(cls, v):
+        if isinstance(v, dict):
+            if v.get('all'):
+                return ['*']
+            return list(v.keys())
         if isinstance(v, str):
             try:
-                return json.loads(v)
+                parsed = json.loads(v)
+                if isinstance(parsed, dict):
+                    if parsed.get('all'):
+                        return ['*']
+                    return list(parsed.keys())
+                return parsed
             except json.JSONDecodeError:
                 return []
         return v
