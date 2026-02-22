@@ -23,21 +23,21 @@ export default function LeadForm({ lead, onSubmit, onCancel }) {
     };
 
     return (
-        <div className="glass-card p-6 animate-slide-up">
-            <h2 className="text-xl font-bold mb-5 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+        <div className="bg-white rounded-[24px] shadow-apple-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
+            <h2 className="text-[24px] font-semibold mb-8 text-apple-text tracking-tight">
                 {lead ? 'Edit Lead' : 'New Lead'}
             </h2>
 
             {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-sm">
+                <div className="mb-6 p-4 rounded-[12px] bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] text-[15px] font-medium">
                     {error}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">First Name *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">First Name *</label>
                         <input
                             className="input-field"
                             placeholder="John"
@@ -47,7 +47,7 @@ export default function LeadForm({ lead, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Last Name *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Last Name *</label>
                         <input
                             className="input-field"
                             placeholder="Doe"
@@ -57,7 +57,7 @@ export default function LeadForm({ lead, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Email *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Email *</label>
                         <input
                             className="input-field"
                             type="email"
@@ -68,7 +68,7 @@ export default function LeadForm({ lead, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Phone</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Phone</label>
                         <input
                             className="input-field"
                             placeholder="+1-555-0100"
@@ -77,7 +77,7 @@ export default function LeadForm({ lead, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Company</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Company</label>
                         <input
                             className="input-field"
                             placeholder="Acme Corp"
@@ -86,7 +86,7 @@ export default function LeadForm({ lead, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Source</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Source</label>
                         <input
                             className="input-field"
                             placeholder="Website, Referral..."
@@ -95,7 +95,7 @@ export default function LeadForm({ lead, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Status</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Status</label>
                         <select
                             className="input-field"
                             value={form.status}
@@ -105,11 +105,11 @@ export default function LeadForm({ lead, onSubmit, onCancel }) {
                             <option value="Contacted">Contacted</option>
                             <option value="Qualified">Qualified</option>
                             <option value="Dead">Dead</option>
-                            {/* Converted is usually set automatically but can be option if needed, usually hidden in edit */}
+                            <option value="Converted">Converted</option>
                         </select>
                     </div>
                 </div>
-                <div className="flex gap-3 pt-2">
+                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-apple-bg">
                     <button type="submit" className="btn-primary">{lead ? 'Update' : 'Create'} Lead</button>
                     <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
                 </div>

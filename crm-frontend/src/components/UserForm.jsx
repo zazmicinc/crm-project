@@ -48,21 +48,21 @@ export default function UserForm({ user, onSubmit, onCancel }) {
     };
 
     return (
-        <div className="glass-card p-6 animate-slide-up max-w-2xl mx-auto mt-10">
-            <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+        <div className="bg-white rounded-[24px] shadow-apple-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
+            <h2 className="text-[24px] font-semibold mb-8 text-apple-text tracking-tight">
                 {user ? 'Edit User' : 'New User'}
             </h2>
 
             {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-sm">
+                <div className="mb-6 p-4 rounded-[12px] bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] text-[15px] font-medium">
                     {error}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">First Name *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">First Name *</label>
                         <input
                             className="input-field"
                             value={form.first_name}
@@ -71,7 +71,7 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Last Name *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Last Name *</label>
                         <input
                             className="input-field"
                             value={form.last_name}
@@ -80,7 +80,7 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Email *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Email *</label>
                         <input
                             className="input-field"
                             type="email"
@@ -90,7 +90,7 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Role *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Role *</label>
                         <select
                             className="input-field"
                             value={form.role_id}
@@ -104,7 +104,7 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">
                             {user ? 'New Password (leave blank to keep current)' : 'Password *'}
                         </label>
                         <input
@@ -115,23 +115,23 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                             required={!user}
                         />
                     </div>
-                    <div className="flex items-center gap-2 pt-6">
+                    <div className="flex items-center gap-3 pt-[38px]">
                         <input
                             type="checkbox"
                             id="is_active"
                             checked={form.is_active}
                             onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                            className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
+                            className="w-4 h-4 rounded text-apple-blue focus:ring-apple-blue border-[#D2D2D7]"
                         />
-                        <label htmlFor="is_active" className="text-sm text-slate-300">Active User</label>
+                        <label htmlFor="is_active" className="text-[14px] font-medium text-apple-text cursor-pointer">Active User</label>
                     </div>
                 </div>
 
-                <div className="flex gap-3 pt-6">
-                    <button type="submit" className="btn-primary px-8">
+                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-apple-bg">
+                    <button type="submit" className="btn-primary">
                         {user ? 'Update' : 'Create'} User
                     </button>
-                    <button type="button" className="btn-secondary px-8" onClick={onCancel}>
+                    <button type="button" className="btn-secondary" onClick={onCancel}>
                         Cancel
                     </button>
                 </div>

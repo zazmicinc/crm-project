@@ -22,21 +22,21 @@ export default function AccountForm({ account, onSubmit, onCancel }) {
     };
 
     return (
-        <div className="glass-card p-6 animate-slide-up">
-            <h2 className="text-xl font-bold mb-5 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+        <div className="bg-white rounded-[24px] shadow-apple-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
+            <h2 className="text-[24px] font-semibold mb-8 text-apple-text tracking-tight">
                 {account ? 'Edit Account' : 'New Account'}
             </h2>
 
             {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-sm">
+                <div className="mb-6 p-4 rounded-[12px] bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] text-[15px] font-medium">
                     {error}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Name *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Name *</label>
                         <input
                             className="input-field"
                             placeholder="Acme Corp"
@@ -46,7 +46,7 @@ export default function AccountForm({ account, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Industry</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Industry</label>
                         <input
                             className="input-field"
                             placeholder="Technology"
@@ -55,7 +55,7 @@ export default function AccountForm({ account, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Website</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Website</label>
                         <input
                             className="input-field"
                             placeholder="https://acme.com"
@@ -64,7 +64,7 @@ export default function AccountForm({ account, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Phone</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Phone</label>
                         <input
                             className="input-field"
                             placeholder="+1-555-0100"
@@ -73,7 +73,7 @@ export default function AccountForm({ account, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Email</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Email</label>
                         <input
                             className="input-field"
                             type="email"
@@ -84,15 +84,15 @@ export default function AccountForm({ account, onSubmit, onCancel }) {
                     </div>
                 </div>
                 <div>
-                    <label className="block text-sm text-slate-400 mb-1">Address</label>
+                    <label className="block text-[14px] font-medium text-apple-text mb-2">Address</label>
                     <textarea
-                        className="input-field min-h-[80px] resize-y"
+                        className="input-field min-h-[100px] resize-y"
                         placeholder="123 Main St, Anytown"
                         value={form.address}
                         onChange={(e) => setForm({ ...form, address: e.target.value })}
                     />
                 </div>
-                <div className="flex gap-3 pt-2">
+                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-apple-bg">
                     <button type="submit" className="btn-primary">{account ? 'Update' : 'Create'} Account</button>
                     <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
                 </div>

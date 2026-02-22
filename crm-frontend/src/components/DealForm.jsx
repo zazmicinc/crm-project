@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { contactsApi } from '../api';
 
 const STAGES = [
-    { value: 'prospecting', label: 'Prospecting' },
-    { value: 'qualification', label: 'Qualification' },
+    { value: 'prospecting', label: 'Lead' },
+    { value: 'qualification', label: 'Qualified' },
     { value: 'proposal', label: 'Proposal' },
     { value: 'negotiation', label: 'Negotiation' },
-    { value: 'closed_won', label: 'Closed Won' },
-    { value: 'closed_lost', label: 'Closed Lost' },
+    { value: 'closed_won', label: 'Won' },
+    { value: 'closed_lost', label: 'Lost' },
 ];
 
 export default function DealForm({ deal, onSubmit, onCancel }) {
@@ -47,21 +47,21 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
     };
 
     return (
-        <div className="glass-card p-6 animate-slide-up">
-            <h2 className="text-xl font-bold mb-5 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+        <div className="bg-white rounded-[24px] shadow-apple-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
+            <h2 className="text-[24px] font-semibold mb-8 text-apple-text tracking-tight">
                 {deal ? 'Edit Deal' : 'New Deal'}
             </h2>
 
             {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-sm">
+                <div className="mb-6 p-4 rounded-[12px] bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] text-[15px] font-medium">
                     {error}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Title *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Title *</label>
                         <input
                             className="input-field"
                             placeholder="Enterprise Plan"
@@ -71,7 +71,7 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Value ($) *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Value ($) *</label>
                         <input
                             className="input-field"
                             type="number"
@@ -84,7 +84,7 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Stage *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Stage *</label>
                         <select
                             className="input-field"
                             value={form.stage}
@@ -96,7 +96,7 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm text-slate-400 mb-1">Contact *</label>
+                        <label className="block text-[14px] font-medium text-apple-text mb-2">Contact *</label>
                         <select
                             className="input-field"
                             value={form.contact_id}
@@ -110,7 +110,7 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                         </select>
                     </div>
                 </div>
-                <div className="flex gap-3 pt-2">
+                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-apple-bg">
                     <button type="submit" className="btn-primary">{deal ? 'Update' : 'Create'} Deal</button>
                     <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
                 </div>
