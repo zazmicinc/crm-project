@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { searchApi } from '../api';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const navItems = [
-    { path: '/', label: 'Dashboard', icon: '🏠' },
-    { path: '/leads', label: 'Leads', icon: '🎯' },
-    { path: '/contacts', label: 'Contacts', icon: '👥' },
-    { path: '/accounts', label: 'Accounts', icon: '🏢' },
-    { path: '/deals', label: 'Pipeline', icon: '📊' },
+    { path: '/', label: 'Overview' },
+    { path: '/leads', label: 'Leads' },
+    { path: '/contacts', label: 'Contacts' },
+    { path: '/accounts', label: 'Accounts' },
+    { path: '/deals', label: 'Pipeline' },
 ];
 
 export default function Layout({ children }) {
@@ -16,7 +17,7 @@ export default function Layout({ children }) {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
-    
+
     // Search state
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
@@ -58,7 +59,6 @@ export default function Layout({ children }) {
         return () => clearTimeout(timer);
     }, [query]);
 
-    // Helper to determine if a link is active
     const isActive = (path) => {
         if (path === '/') return location.pathname === '/';
         return location.pathname.startsWith(path);
@@ -82,187 +82,175 @@ export default function Layout({ children }) {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
-            {/* ── Top nav bar ────────────────────────────────────────────── */}
-            <header className="sticky top-0 z-50 glass-card rounded-none border-x-0 border-t-0 border-b border-white/5 h-[72px] px-6 lg:px-8 flex items-center justify-between shadow-lg backdrop-blur-xl bg-slate-900/70">
+        <div className="min-h-screen bg-apple-bg text-apple-text font-sans">
+            {/* ── Top Navigation Bar ────────────────────────────────────────────── */}
+            <header className="fixed top-0 left-0 right-0 z-50 h-12 bg-white/80 backdrop-blur-[20px] border-b border-black/10 flex items-center justify-between px-6 transition-all">
+
                 {/* Left: Logo */}
-                <div className="flex items-center shrink-0 w-[240px]">
-                    <Link to="/" className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg font-bold shadow-glow text-white">
-                            C
-                        </div>
-                        <h1 className="hidden lg:block text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent tracking-tight">
-                            CRM Suite
-                        </h1>
+                <div className="flex items-center shrink-0">
+                    <Link to="/" className="flex items-center gap-2">
+                        {/* Example logo text if no image exists */}
+                        <span className="font-semibold text-[17px] text-apple-text">Zazmic CRM</span>
                     </Link>
                 </div>
 
-                {/* Center: Search & Desktop Nav */}
-                <div className="flex-1 flex items-center justify-center gap-8 max-w-5xl">
-                    {/* Global Search */}
-                    <div className="crm-nav-search hidden sm:block w-full max-w-sm" ref={searchRef}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                        <input
-                            placeholder="Search everything..."
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            onFocus={() => query.length >= 2 && setShowResults(true)}
-                        />
-                        {isSearching && (
-                            <div className="absolute right-3 top-2.5">
-                                <div className="animate-spin h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full"></div>
-                            </div>
-                        )}
-
-                        {/* Search Results Dropdown */}
-                        {showResults && results.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-2 glass-card border border-white/10 shadow-2xl overflow-hidden max-h-[400px] overflow-y-auto z-[60] bg-slate-900/95 backdrop-blur-2xl">
-                                {['lead', 'contact', 'account', 'deal'].map(type => {
-                                    const typeResults = results.filter(r => r.type === type);
-                                    if (typeResults.length === 0) return null;
-                                    return (
-                                        <div key={type} className="border-b border-white/5 last:border-0">
-                                            <div className="px-4 py-2 bg-slate-800/30 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-                                                {type}s
-                                            </div>
-                                            {typeResults.map(r => (
-                                                <button
-                                                    key={`${r.type}-${r.id}`}
-                                                    onClick={() => handleResultClick(r)}
-                                                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-indigo-500/10 transition-colors text-left"
-                                                >
-                                                    <div className="flex-1 overflow-hidden">
-                                                        <p className="text-sm font-medium text-slate-200 truncate">{r.title}</p>
-                                                        <p className="text-[11px] text-slate-500 truncate">{r.subtitle}</p>
-                                                    </div>
-                                                    {r.status && (
-                                                        <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-white/5 uppercase">
-                                                            {r.status.replace('_', ' ')}
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Desktop nav */}
-                    <nav className="hidden xl:flex items-center gap-2">
-                        {navItems.map((item) => {
-                            const active = isActive(item.path);
-                            return (
-                                <Link
-                                    key={item.path}
-                                    to={item.path}
-                                    className={`px-4 py-2.5 rounded-lg text-[15px] font-medium transition-all duration-200 flex items-center gap-2.5 ${
-                                        active
-                                            ? 'bg-indigo-500/10 text-indigo-300 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.2)]'
-                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
-                                    }`}
-                                >
-                                    <span className={active ? 'text-indigo-400' : 'opacity-70'}>{item.icon}</span>
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
-                    </nav>
-                </div>
-
-                {/* Right: User & Actions */}
-                <div className="flex items-center justify-end gap-4 w-[240px]">
-                    {/* Compact nav for smaller desktops */}
-                    <nav className="hidden md:flex xl:hidden gap-1">
-                        {navItems.map(item => (
-                            <Link key={item.path} to={item.path} className={`p-2 rounded-lg ${isActive(item.path) ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400'}`} title={item.label}>
-                                {item.icon}
-                            </Link>
-                        ))}
-                    </nav>
-
-                    {isAdmin && (
-                        <div className="hidden lg:flex items-center gap-2">
-                            <div className="w-px h-4 bg-slate-800 mx-1" />
-                            <Link to="/admin/users" className={`p-2 rounded-lg ${isActive('/admin/users') ? 'text-purple-400 bg-purple-500/10' : 'text-slate-400'}`} title="Users">👤</Link>
-                            <Link to="/settings/pipelines" className={`p-2 rounded-lg ${isActive('/settings/pipelines') ? 'text-slate-200 bg-white/5' : 'text-slate-400'}`} title="Settings">⚙️</Link>
-                        </div>
-                    )}
-
-                    <div className="hidden sm:flex flex-col items-end shrink-0">
-                        <span className="text-sm font-semibold text-slate-200">{user?.first_name} {user?.last_name}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-slate-500">{user?.role?.name}</span>
-                    </div>
-                    <button 
-                        onClick={handleLogout}
-                        className="p-2 text-slate-400 hover:text-red-400 transition-colors shrink-0"
-                        title="Logout"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                    </button>
-                    {/* Mobile hamburger */}
-                    <button
-                        className="md:hidden text-2xl text-slate-400 p-2 hover:text-white transition-colors"
-                        onClick={() => setMobileOpen(!mobileOpen)}
-                    >
-                        {mobileOpen ? '✕' : '☰'}
-                    </button>
-                </div>
-            </header>
-
-            {/* Mobile nav dropdown */}
-            {mobileOpen && (
-                <nav className="md:hidden glass-card rounded-none border-x-0 px-6 py-4 flex flex-col gap-2 animate-fade-in absolute top-[72px] left-0 right-0 z-40 bg-slate-900/95 border-b border-white/10 shadow-2xl">
-                    {/* Mobile Search */}
-                    <div className="mb-4">
-                        <input
-                            className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-sm text-white"
-                            placeholder="Search..."
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                        />
-                    </div>
+                {/* Center: Desktop Nav */}
+                <nav className="hidden md:flex items-center gap-6">
                     {navItems.map((item) => {
                         const active = isActive(item.path);
                         return (
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                onClick={() => setMobileOpen(false)}
-                                className={`px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-3 ${
-                                    active
-                                        ? 'bg-indigo-500/20 text-indigo-300'
-                                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                                }`}
+                                className={`text-[14px] transition-colors ${active
+                                        ? 'text-apple-blue font-medium'
+                                        : 'text-apple-text hover:text-apple-blue font-medium opacity-80'
+                                    }`}
                             >
-                                <span>{item.icon}</span>
                                 {item.label}
                             </Link>
                         );
                     })}
-                    {isAdmin && (
-                        <>
-                            <div className="h-px bg-slate-800 my-1 mx-4" />
-                            <Link
-                                to="/admin/users"
-                                onClick={() => setMobileOpen(false)}
-                                className={`px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-3 ${
-                                    isActive('/admin/users') ? 'bg-purple-500/20 text-purple-300' : 'text-slate-400 hover:bg-white/5'
-                                }`}
-                            >
-                                <span>👤</span> User Management
-                            </Link>
-                        </>
-                    )}
                 </nav>
-            )}
 
-            {/* ── Main content ───────────────────────────────────────────── */}
-            <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
-                {children}
+                {/* Right: Search & User Actions */}
+                <div className="flex items-center justify-end gap-6">
+
+                    {/* Global Search */}
+                    <div className="hidden sm:block relative w-64" ref={searchRef}>
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-apple-gray" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                        <input
+                            placeholder="Search"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            onFocus={() => query.length >= 2 && setShowResults(true)}
+                            className="bg-apple-bg rounded-full pl-9 pr-4 py-1.5 text-[14px] w-full border border-transparent focus:bg-white focus:border-apple-blue focus:outline-none transition-all placeholder:text-apple-gray"
+                        />
+                        {isSearching && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <div className="animate-spin h-3 w-3 border-2 border-apple-blue border-t-transparent rounded-full"></div>
+                            </div>
+                        )}
+
+                        {/* Search Results Dropdown */}
+                        <AnimatePresence>
+                            {showResults && results.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="absolute top-full mt-2 left-0 right-0 bg-white/90 backdrop-blur-[20px] rounded-2xl shadow-apple-lg border border-black/5 overflow-hidden max-h-[400px] overflow-y-auto z-[60]"
+                                >
+                                    {['lead', 'contact', 'account', 'deal'].map(type => {
+                                        const typeResults = results.filter(r => r.type === type);
+                                        if (typeResults.length === 0) return null;
+                                        return (
+                                            <div key={type} className="border-b border-black/5 last:border-0">
+                                                <div className="px-4 py-2 bg-apple-bg/50 text-[10px] uppercase tracking-wider text-apple-gray font-semibold">
+                                                    {type}s
+                                                </div>
+                                                {typeResults.map(r => (
+                                                    <button
+                                                        key={`${r.type}-${r.id}`}
+                                                        onClick={() => handleResultClick(r)}
+                                                        className="w-full px-4 py-3 flex flex-col hover:bg-black/5 transition-colors text-left"
+                                                    >
+                                                        <span className="text-[14px] font-medium text-apple-text truncate">{r.title}</span>
+                                                        <span className="text-[12px] text-apple-gray truncate mt-0.5">{r.subtitle}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        );
+                                    })}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    <div className="hidden sm:flex items-center gap-4">
+                        <span className="text-[14px] font-medium text-apple-text">{user?.first_name}</span>
+                        {isAdmin && (
+                            <>
+                                <Link to="/admin/users" className="text-apple-gray hover:text-apple-blue transition-colors text-sm font-medium" title="Users">Admin</Link>
+                                <Link to="/settings/pipelines" className="text-apple-gray hover:text-apple-blue transition-colors text-sm font-medium" title="Settings">Settings</Link>
+                            </>
+                        )}
+                        <button
+                            onClick={handleLogout}
+                            className="text-[14px] font-medium text-apple-gray hover:text-danger transition-colors"
+                            title="Logout"
+                        >
+                            Log Out
+                        </button>
+                    </div>
+
+                    {/* Mobile hamburger */}
+                    <button
+                        className="md:hidden text-apple-text p-1"
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                    >
+                        {mobileOpen ? (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        ) : (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
+                        )}
+                    </button>
+                </div>
+            </header>
+
+            {/* Mobile Nav Dropdown */}
+            <AnimatePresence>
+                {mobileOpen && (
+                    <motion.nav
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="md:hidden fixed top-12 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-black/10 overflow-hidden"
+                    >
+                        <div className="p-6 flex flex-col gap-4">
+                            {/* Mobile Search */}
+                            <div>
+                                <input
+                                    className="w-full bg-apple-bg rounded-lg px-4 py-2 text-[14px] focus:outline-none focus:border-apple-blue border border-transparent"
+                                    placeholder="Search..."
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                />
+                            </div>
+                            {navItems.map((item) => {
+                                const active = isActive(item.path);
+                                return (
+                                    <Link
+                                        key={item.path}
+                                        to={item.path}
+                                        onClick={() => setMobileOpen(false)}
+                                        className={`text-[17px] font-medium ${active ? 'text-apple-blue' : 'text-apple-text'
+                                            }`}
+                                    >
+                                        {item.label}
+                                    </Link>
+                                );
+                            })}
+                            <div className="h-px bg-black/10 my-2" />
+                            {isAdmin && (
+                                <Link to="/admin/users" onClick={() => setMobileOpen(false)} className="text-[17px] text-apple-gray font-medium">User Admin</Link>
+                            )}
+                            <button onClick={handleLogout} className="text-left text-[17px] text-danger font-medium mt-2">Log Out</button>
+                        </div>
+                    </motion.nav>
+                )}
+            </AnimatePresence>
+
+            {/* ── Main Content ────────────────────────────────────────────── */}
+            <main className="pt-[80px] pb-24 px-6 lg:px-8 max-w-[1200px] mx-auto min-h-screen">
+                <motion.div
+                    key={location.pathname}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                >
+                    {children}
+                </motion.div>
             </main>
         </div>
     );

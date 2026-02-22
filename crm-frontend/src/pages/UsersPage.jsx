@@ -53,85 +53,89 @@ export default function UsersPage() {
     if (showForm) {
         return (
             <div className="max-w-4xl mx-auto">
-                <UserForm 
-                    user={editingUser} 
-                    onSubmit={handleSubmit} 
-                    onCancel={() => { setShowForm(false); setEditingUser(null); }} 
+                <UserForm
+                    user={editingUser}
+                    onSubmit={handleSubmit}
+                    onCancel={() => { setShowForm(false); setEditingUser(null); }}
                 />
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <header className="flex justify-between items-center">
+        <div className="animate-fade-in pb-12 w-full max-w-4xl mx-auto">
+            <header className="flex justify-between items-end mb-10">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">User Management</h1>
-                    <p className="text-slate-400 mt-1">Manage system access and permissions</p>
+                    <h1 className="text-[40px] font-bold text-apple-text tracking-tight mb-2">User Management</h1>
+                    <p className="text-[17px] text-apple-gray">Manage system access and permissions</p>
                 </div>
                 <button className="btn-primary" onClick={() => setShowForm(true)}>
-                    <span className="text-lg mr-2">+</span> Add User
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    New User
                 </button>
             </header>
 
-            <div className="glass-card overflow-hidden">
+            <div className="bg-white rounded-[24px] shadow-apple-sm overflow-hidden border border-black/[0.04]">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider">
-                                <th className="px-6 py-4 font-semibold">User</th>
-                                <th className="px-6 py-4 font-semibold">Email</th>
-                                <th className="px-6 py-4 font-semibold">Role</th>
-                                <th className="px-6 py-4 font-semibold">Status</th>
-                                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                            <tr>
+                                <th className="px-6 py-4 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg">User</th>
+                                <th className="px-6 py-4 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg">Email</th>
+                                <th className="px-6 py-4 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg">Role</th>
+                                <th className="px-6 py-4 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg">Status</th>
+                                <th className="px-6 py-4 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800">
+                        <tbody>
                             {users.map(u => (
-                                <tr key={u.id} className="hover:bg-slate-800/30 transition-colors group">
+                                <tr key={u.id} className="hover:bg-apple-bg transition-colors border-b border-apple-bg last:border-0 group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-indigo-400 uppercase">
+                                            <div className="w-10 h-10 rounded-full bg-[#F5F5F7] text-apple-text flex items-center justify-center text-[14px] font-semibold uppercase">
                                                 {u.first_name[0]}{u.last_name[0]}
                                             </div>
-                                            <span className="font-medium text-slate-200">{u.first_name} {u.last_name}</span>
+                                            <span className="font-medium text-[15px] text-apple-text">{u.first_name} {u.last_name}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-slate-400">{u.email}</td>
+                                    <td className="px-6 py-4 text-[15px] text-apple-gray">{u.email}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                            u.role?.name === 'Admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                                            u.role?.name === 'Sales Rep' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                                            'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                                        }`}>
+                                        <span className={`badge ${u.role?.name === 'Admin' ? 'bg-[#F3E8FC] text-[#A855F7]' :
+                                                u.role?.name === 'Sales Rep' ? 'bg-[#E8F2FC] text-[#0071E3]' :
+                                                    'bg-[#F5F5F7] text-[#6E6E73]'
+                                            }`}>
                                             {u.role?.name || 'No Role'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        {u.is_active ? 
-                                            <span className="text-green-500 flex items-center gap-1.5 text-sm">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> 
+                                        {u.is_active ?
+                                            <span className="flex items-center gap-1.5 text-[14px] font-medium text-[#30D158]">
+                                                <span className="w-2 h-2 rounded-full bg-[#30D158]"></span>
                                                 Active
                                             </span> :
-                                            <span className="text-slate-500 flex items-center gap-1.5 text-sm">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> 
+                                            <span className="flex items-center gap-1.5 text-[14px] font-medium text-apple-gray">
+                                                <span className="w-2 h-2 rounded-full bg-apple-gray"></span>
                                                 Inactive
                                             </span>
                                         }
                                     </td>
-                                    <td className="px-6 py-4 text-right space-x-3">
-                                        <button 
-                                            className="text-slate-400 hover:text-white transition-colors text-sm font-medium"
-                                            onClick={() => { setEditingUser(u); setShowForm(true); }}
-                                        >
-                                            Edit
-                                        </button>
-                                        <button 
-                                            className="text-slate-500 hover:text-red-400 transition-colors text-sm font-medium"
-                                            onClick={() => handleDelete(u.id)}
-                                        >
-                                            Delete
-                                        </button>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#F5F5F7] text-apple-gray hover:bg-apple-blue hover:text-white transition-colors"
+                                                onClick={() => { setEditingUser(u); setShowForm(true); }}
+                                                title="Edit"
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
+                                            </button>
+                                            <button
+                                                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#F5F5F7] text-apple-gray hover:bg-danger hover:text-white transition-colors"
+                                                onClick={() => handleDelete(u.id)}
+                                                title="Delete"
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" /></svg>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -139,12 +143,13 @@ export default function UsersPage() {
                     </table>
                 </div>
                 {loading && (
-                    <div className="p-12 text-center text-slate-500 animate-pulse">
-                        Loading system users...
+                    <div className="p-16 flex flex-col items-center">
+                        <div className="w-8 h-8 border-2 border-apple-blue border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <span className="text-apple-gray text-[15px]">Loading system users...</span>
                     </div>
                 )}
                 {!loading && users.length === 0 && (
-                    <div className="p-12 text-center text-slate-500">
+                    <div className="p-16 text-center text-apple-gray text-[15px]">
                         No users found in the system.
                     </div>
                 )}
