@@ -103,8 +103,8 @@ export default function Layout({ children }) {
                                 key={item.path}
                                 to={item.path}
                                 className={`text-[14px] transition-colors ${active
-                                        ? 'text-apple-blue font-medium'
-                                        : 'text-apple-text hover:text-apple-blue font-medium opacity-80'
+                                    ? 'text-apple-blue font-medium'
+                                    : 'text-apple-text hover:text-apple-blue font-medium opacity-80'
                                     }`}
                             >
                                 {item.label}
@@ -124,7 +124,7 @@ export default function Layout({ children }) {
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onFocus={() => query.length >= 2 && setShowResults(true)}
-                            className="bg-apple-bg rounded-full pl-9 pr-4 py-1.5 text-[14px] w-full border border-transparent focus:bg-white focus:border-apple-blue focus:outline-none transition-all placeholder:text-apple-gray"
+                            className="bg-apple-bg rounded-full pl-10 pr-4 py-1.5 text-[14px] w-full border border-transparent focus:bg-white focus:border-apple-blue focus:outline-none transition-all placeholder:text-apple-gray"
                         />
                         {isSearching && (
                             <div className="absolute right-3 top-1/2 -translate-y-1/2">
