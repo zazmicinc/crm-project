@@ -118,19 +118,21 @@ export default function Layout({ children }) {
 
                     {/* Global Search */}
                     <div className="hidden sm:block relative w-64" ref={searchRef}>
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-apple-gray" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                        <input
-                            placeholder="Search"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            onFocus={() => query.length >= 2 && setShowResults(true)}
-                            className="bg-apple-bg rounded-full pl-10 pr-4 py-1.5 text-[14px] w-full border border-transparent focus:bg-white focus:border-apple-blue focus:outline-none transition-all placeholder:text-apple-gray"
-                        />
-                        {isSearching && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                <div className="animate-spin h-3 w-3 border-2 border-apple-blue border-t-transparent rounded-full"></div>
-                            </div>
-                        )}
+                        <div className="flex items-center bg-apple-bg rounded-full border border-transparent focus-within:bg-white focus-within:border-apple-blue transition-all px-3 py-1.5 gap-2">
+                            <svg className="shrink-0 w-4 h-4 text-apple-gray" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                            <input
+                                placeholder="Search"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                onFocus={() => query.length >= 2 && setShowResults(true)}
+                                className="bg-transparent text-[14px] w-full focus:outline-none placeholder:text-apple-gray"
+                            />
+                            {isSearching && (
+                                <div className="shrink-0">
+                                    <div className="animate-spin h-3 w-3 border-2 border-apple-blue border-t-transparent rounded-full"></div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Search Results Dropdown */}
                         <AnimatePresence>
