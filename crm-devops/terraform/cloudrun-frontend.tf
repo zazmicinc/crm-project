@@ -1,5 +1,5 @@
 resource "google_cloud_run_v2_service" "frontend" {
-  name     = "crm-frontend-${var.environment}"
+  name     = "crm-frontend"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
 

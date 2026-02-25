@@ -1,5 +1,5 @@
 resource "google_cloud_run_v2_service" "backend" {
-  name     = "crm-backend-${var.environment}"
+  name     = "crm-backend"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
 
