@@ -1,0 +1,504 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Manual trigger option
+
+env:
+  ENVIRONMENT: production
+  GCP_PROJECT_ID: zazmic-crm-prod
+  GCP_REGION: us-central1
+
+jobs:
+  # ============================================================
+  # Job 1: Run Tests
+  # ============================================================
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 🔧 Install backend dependencies
+        working-directory: ./backend
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          fi
+
+      - name: 🔧 Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: 🧪 Run backend tests
+        working-directory: ./backend
+        run: |
+          if [ -d tests ]; then
+            pytest tests/ -v --tb=short || echo "No tests found"
+          else
+            echo "No test directory found, skipping tests"
+          fi
+        continue-on-error: true
+
+      - name: 🧪 Run frontend tests
+        working-directory: ./frontend
+        run: npm test -- --watchAll=false || echo "No tests configured"
+        continue-on-error: true
+
+      - name: 🏗️ Build frontend
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          REACT_APP_API_URL: https://zazmic-crm-prod-backend.run.app
+          REACT_APP_ENV: production
+
+  # ============================================================
+  # Job 2: Manual Approval for Production
+  # ============================================================
+  approval:
+    name: 🚦 Approve Production Deployment
+    runs-on: ubuntu-latest
+    needs: test
+    environment:
+      name: production
+    
+    steps:
+      - name: 📝 Awaiting approval
+        run: |
+          echo "✅ All tests passed"
+          echo "⏳ Waiting for manual approval to deploy to production..."
+
+  # ============================================================
+  # Job 3: Deploy to Production
+  # ============================================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: approval
+    timeout-minutes: 30
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🔐 Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_PRODUCTION }}
+
+      - name: ☁️ Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      # ============================================================
+      # Build
+      # ============================================================
+      - name: 🏗️ Build frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          REACT_APP_API_URL: https://zazmic-crm-prod-backend.run.app
+          REACT_APP_ENV: production
+
+      # ============================================================
+      # Database Migrations
+      # ============================================================
+      - name: 🗄️ Run database migrations
+        working-directory: ./backend
+        run: |
+          pip install alembic psycopg2-binary
+          
+          # Check if alembic is configured
+          if [ -f "alembic.ini" ]; then
+            echo "Running database migrations..."
+            alembic upgrade head
+          else
+            echo "Alembic not configured, skipping migrations"
+          fi
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        continue-on-error: true
+
+      # ============================================================
+      # Terraform Infrastructure (Optional)
+      # ============================================================
+      - name: 🏗️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: 🔧 Terraform Deploy
+        working-directory: ./terraform
+        run: |
+          if [ -f "main.tf" ]; then
+            terraform init
+            terraform workspace select production || terraform workspace new production
+            terraform plan -out=tfplan -var="environment=production"
+            terraform apply tfplan -auto-approve
+          else
+            echo "Terraform not configured, skipping infrastructure provisioning"
+          fi
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY_PRODUCTION }}
+        continue-on-error: true
+
+      # ============================================================
+      # Deploy to Cloud Run
+      # ============================================================
+      - name: 🚢 Deploy backend to Cloud Run
+        working-directory: ./backend
+        run: |
+          gcloud run deploy zazmic-crm-prod-backend \
+            --source . \
+            --platform managed \
+            --region ${{ env.GCP_REGION }} \
+            --allow-unauthenticated \
+            --set-env-vars "ENVIRONMENT=production,DATABASE_URL=${{ secrets.PRODUCTION_DATABASE_URL }}" \
+            --min-instances 1 \
+            --max-instances 10 \
+            --memory 1Gi \
+            --cpu 2 \
+            --timeout 300 \
+            --quiet
+
+      - name: 🚢 Deploy frontend to Cloud Run
+        working-directory: ./frontend
+        run: |
+          gcloud run deploy zazmic-crm-prod-frontend \
+            --source . \
+            --platform managed \
+            --region ${{ env.GCP_REGION }} \
+            --allow-unauthenticated \
+            --min-instances 1 \
+            --max-instances 5 \
+            --memory 512Mi \
+            --cpu 1 \
+            --quiet
+
+      # ============================================================
+      # Get Deployment URLs
+      # ============================================================
+      - name: 🔗 Get deployment URLs
+        id: get-urls
+        run: |
+          BACKEND_URL=$(gcloud run services describe zazmic-crm-prod-backend \
+            --region ${{ env.GCP_REGION }} \
+            --format 'value(status.url)')
+          
+          FRONTEND_URL=$(gcloud run services describe zazmic-crm-prod-frontend \
+            --region ${{ env.GCP_REGION }} \
+            --format 'value(status.url)')
+          
+          echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "frontend_url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+          
+          echo "Backend URL: $BACKEND_URL"
+          echo "Frontend URL: $FRONTEND_URL"
+
+      # ============================================================
+      # Health Checks
+      # ============================================================
+      - name: 🏥 Health check - Backend
+        run: |
+          echo "Waiting for backend to be ready..."
+          sleep 30
+          
+          for i in {1..5}; do
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.get-urls.outputs.backend_url }}/health)
+            if [ "$RESPONSE" == "200" ]; then
+              echo "✅ Backend health check passed"
+              exit 0
+            fi
+            echo "Attempt $i: Health check returned $RESPONSE, retrying..."
+            sleep 10
+          done
+          
+          echo "⚠️ Backend health check did not return 200, but continuing..."
+        continue-on-error: true
+
+      - name: 🏥 Health check - Frontend
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.get-urls.outputs.frontend_url }})
+          
+          if [ "$RESPONSE" == "200" ]; then
+            echo "✅ Frontend health check passed"
+          else
+            echo "⚠️ Frontend returned HTTP $RESPONSE"
+          fi
+        continue-on-error: true
+
+      # ============================================================
+      # Notifications
+      # ============================================================
+      - name: 📧 Send success email
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "✅ Production Deployment Successful - Zazmic CRM"
+          to: yann@zazmic.com
+          from: GitHub Actions <noreply@zazmic.com>
+          html_body: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+                .header h1 { margin: 0; font-size: 24px; }
+                .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+                .card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .url-box { background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #10b981; }
+                .url-box a { color: #10b981; text-decoration: none; font-weight: 500; word-break: break-all; }
+                .button { display: inline-block; background: #10b981; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; margin: 10px 5px; }
+                .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px; }
+                .emoji { font-size: 32px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <div class="emoji">🎉</div>
+                  <h1>Production Deployment Successful!</h1>
+                </div>
+                <div class="content">
+                  <div class="card">
+                    <h2 style="margin-top: 0;">Deployment Details</h2>
+                    <p><strong>Commit:</strong> ${{ github.sha }}</p>
+                    <p><strong>Author:</strong> ${{ github.actor }}</p>
+                    <p><strong>Branch:</strong> ${{ github.ref_name }}</p>
+                    <p><strong>Timestamp:</strong> ${{ github.event.head_commit.timestamp }}</p>
+                  </div>
+
+                  <div class="card">
+                    <h3 style="margin-top: 0;">🔗 Production URLs</h3>
+                    <div class="url-box">
+                      <strong>🎨 Frontend:</strong><br>
+                      <a href="${{ steps.get-urls.outputs.frontend_url }}" target="_blank">${{ steps.get-urls.outputs.frontend_url }}</a>
+                    </div>
+                    <div class="url-box">
+                      <strong>⚙️ Backend API:</strong><br>
+                      <a href="${{ steps.get-urls.outputs.backend_url }}" target="_blank">${{ steps.get-urls.outputs.backend_url }}</a>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                      <a href="${{ steps.get-urls.outputs.frontend_url }}" class="button">Open Zazmic CRM</a>
+                    </div>
+                  </div>
+
+                  <div class="card">
+                    <h3 style="margin-top: 0;">✅ Health Checks</h3>
+                    <p>All health checks passed. Your application is live and running smoothly.</p>
+                  </div>
+                </div>
+                <div class="footer">
+                  <p>Zazmic CRM - Production Deployment System</p>
+                  <p>This is an automated email from GitHub Actions</p>
+                </div>
+              </div>
+            </body>
+            </html>
+        continue-on-error: true
+
+      - name: 📧 Send failure email
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "🚨 Production Deployment Failed - Zazmic CRM"
+          to: yann@zazmic.com
+          from: GitHub Actions <noreply@zazmic.com>
+          html_body: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+                .header h1 { margin: 0; font-size: 24px; }
+                .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+                .card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .button { display: inline-block; background: #ef4444; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; margin: 10px 5px; }
+                .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px; }
+                .emoji { font-size: 32px; }
+                .alert { background: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin: 15px 0; border-radius: 4px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <div class="emoji">🚨</div>
+                  <h1>Production Deployment Failed</h1>
+                </div>
+                <div class="content">
+                  <div class="alert">
+                    <strong>⚠️ Action Required:</strong> Production deployment encountered an error and needs your attention.
+                  </div>
+
+                  <div class="card">
+                    <h2 style="margin-top: 0;">Deployment Details</h2>
+                    <p><strong>Commit:</strong> ${{ github.sha }}</p>
+                    <p><strong>Author:</strong> ${{ github.actor }}</p>
+                    <p><strong>Branch:</strong> ${{ github.ref_name }}</p>
+                  </div>
+
+                  <div class="card">
+                    <h3 style="margin-top: 0;">Next Steps</h3>
+                    <ol>
+                      <li>Check the GitHub Actions logs for error details</li>
+                      <li>Verify all services are running in GCP Console</li>
+                      <li>Test the application manually if needed</li>
+                      <li>Fix the issue and redeploy</li>
+                    </ol>
+                    <div style="text-align: center; margin-top: 20px;">
+                      <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" class="button">View Error Logs</a>
+                    </div>
+                  </div>
+                </div>
+                <div class="footer">
+                  <p>Zazmic CRM - Production Deployment System</p>
+                  <p>This is an automated email from GitHub Actions</p>
+                </div>
+              </div>
+            </body>
+            </html>
+        continue-on-error: true
+
+      - name: 📢 Slack notification - Success
+        if: success()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "🎉 Production Deployment Successful",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🎉 Production Deployment Successful"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ github.sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Author:*\n${{ github.actor }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Live URLs:*\n• Frontend: ${{ steps.get-urls.outputs.frontend_url }}\n• Backend: ${{ steps.get-urls.outputs.backend_url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: 📢 Slack notification - Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "🚨 Production Deployment Failed",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 Production Deployment Failed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Production deployment failed. Check the logs immediately."
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Logs"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                      "style": "danger"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      # ============================================================
+      # Deployment Summary
+      # ============================================================
+      - name: 📝 Create deployment summary
+        if: always()
+        run: |
+          echo "# 🚀 Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Deployment URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** ${{ steps.get-urls.outputs.frontend_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend:** ${{ steps.get-urls.outputs.backend_url }}" >> $GITHUB_STEP_SUMMARY

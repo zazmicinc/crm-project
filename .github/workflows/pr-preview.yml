@@ -1,0 +1,322 @@
+name: PR Preview Environment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+  pull_request:
+    types: [closed]
+
+env:
+  GCP_PROJECT_ID: zazmic-crm-prod  # Using production project for previews
+  GCP_REGION: us-central1
+
+jobs:
+  # ============================================================
+  # Deploy Preview Environment
+  # ============================================================
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🔐 Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_PRODUCTION }}
+
+      - name: ☁️ Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # ============================================================
+      # Build
+      # ============================================================
+      - name: 🏗️ Build frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          REACT_APP_API_URL: https://pr-${{ github.event.pull_request.number }}-backend.run.app
+          REACT_APP_ENV: preview
+
+      # ============================================================
+      # Deploy Preview Services
+      # ============================================================
+      - name: 🚢 Deploy backend preview
+        working-directory: ./backend
+        run: |
+          gcloud run deploy pr-${{ github.event.pull_request.number }}-backend \
+            --source . \
+            --platform managed \
+            --region ${{ env.GCP_REGION }} \
+            --allow-unauthenticated \
+            --set-env-vars "ENVIRONMENT=preview,PR_NUMBER=${{ github.event.pull_request.number }}" \
+            --min-instances 0 \
+            --max-instances 2 \
+            --memory 512Mi \
+            --cpu 1 \
+            --timeout 300 \
+            --quiet
+
+      - name: 🚢 Deploy frontend preview
+        working-directory: ./frontend
+        run: |
+          gcloud run deploy pr-${{ github.event.pull_request.number }}-frontend \
+            --source . \
+            --platform managed \
+            --region ${{ env.GCP_REGION }} \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances 2 \
+            --memory 256Mi \
+            --cpu 1 \
+            --quiet
+
+      # ============================================================
+      # Get Preview URLs
+      # ============================================================
+      - name: 🔗 Get preview URLs
+        id: get-urls
+        run: |
+          BACKEND_URL=$(gcloud run services describe pr-${{ github.event.pull_request.number }}-backend \
+            --region ${{ env.GCP_REGION }} \
+            --format 'value(status.url)')
+          
+          FRONTEND_URL=$(gcloud run services describe pr-${{ github.event.pull_request.number }}-frontend \
+            --region ${{ env.GCP_REGION }} \
+            --format 'value(status.url)')
+          
+          echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "frontend_url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+
+      # ============================================================
+      # Comment on PR with Preview Links
+      # ============================================================
+      - name: 💬 Comment on PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            const backendUrl = '${{ steps.get-urls.outputs.backend_url }}';
+            const frontendUrl = '${{ steps.get-urls.outputs.frontend_url }}';
+            
+            const comment = `## 🚀 Preview Environment Ready!
+            
+            Your PR has been deployed to a preview environment:
+            
+            | Service | URL |
+            |---------|-----|
+            | 🎨 **Frontend** | [${frontendUrl}](${frontendUrl}) |
+            | ⚙️ **Backend API** | [${backendUrl}](${backendUrl}) |
+            
+            ### 🧪 Testing
+            - Frontend is live and ready to test
+            - Backend API is accessible
+            - Changes will auto-update on new commits
+            
+            ### ⏱️ Auto-Cleanup
+            This preview will be deleted when the PR is closed or merged.
+            
+            ---
+            <sub>Preview PR #${prNumber} | Commit: ${context.sha.substring(0, 7)}</sub>`;
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Preview Environment Ready')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: comment
+              });
+            }
+
+      # ============================================================
+      # Health Check
+      # ============================================================
+      - name: 🏥 Test preview deployment
+        run: |
+          echo "Testing preview environment..."
+          sleep 20
+          
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.get-urls.outputs.frontend_url }})
+          BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.get-urls.outputs.backend_url }}/health || echo "000")
+          
+          echo "Frontend status: $FRONTEND_STATUS"
+          echo "Backend status: $BACKEND_STATUS"
+          
+          if [ "$FRONTEND_STATUS" == "200" ]; then
+            echo "✅ Preview environment is healthy"
+          else
+            echo "⚠️ Preview may need a moment to fully start"
+          fi
+        continue-on-error: true
+
+      # ============================================================
+      # Email Notification
+      # ============================================================
+      - name: 📧 Send email with preview URLs
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "🚀 Preview Ready: PR #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}"
+          to: yann@zazmic.com
+          from: GitHub Actions <noreply@zazmic.com>
+          html_body: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+                .header h1 { margin: 0; font-size: 24px; }
+                .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+                .card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .url-box { background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #667eea; }
+                .url-box a { color: #667eea; text-decoration: none; font-weight: 500; word-break: break-all; }
+                .url-box a:hover { text-decoration: underline; }
+                .button { display: inline-block; background: #667eea; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; margin: 10px 5px; }
+                .button:hover { background: #5568d3; }
+                .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px; }
+                .emoji { font-size: 20px; }
+                .info { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 15px 0; border-radius: 4px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <div class="emoji">🚀</div>
+                  <h1>Preview Environment Ready!</h1>
+                </div>
+                <div class="content">
+                  <div class="card">
+                    <h2 style="margin-top: 0;">PR #${{ github.event.pull_request.number }}</h2>
+                    <p><strong>Title:</strong> ${{ github.event.pull_request.title }}</p>
+                    <p><strong>Author:</strong> ${{ github.actor }}</p>
+                    <p><strong>Branch:</strong> ${{ github.head_ref }}</p>
+                    <p><strong>Commit:</strong> ${{ github.sha }}</p>
+                  </div>
+
+                  <div class="card">
+                    <h3 style="margin-top: 0;">🔗 Preview URLs</h3>
+                    
+                    <div class="url-box">
+                      <strong>🎨 Frontend:</strong><br>
+                      <a href="${{ steps.get-urls.outputs.frontend_url }}" target="_blank">${{ steps.get-urls.outputs.frontend_url }}</a>
+                    </div>
+                    
+                    <div class="url-box">
+                      <strong>⚙️ Backend API:</strong><br>
+                      <a href="${{ steps.get-urls.outputs.backend_url }}" target="_blank">${{ steps.get-urls.outputs.backend_url }}</a>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 20px;">
+                      <a href="${{ steps.get-urls.outputs.frontend_url }}" class="button">Open Frontend Preview</a>
+                      <a href="${{ github.event.pull_request.html_url }}" class="button" style="background: #10b981;">View PR on GitHub</a>
+                    </div>
+                  </div>
+
+                  <div class="info">
+                    <strong>ℹ️ Note:</strong> This preview environment does not have a database connection. You can test:
+                    <ul style="margin: 5px 0;">
+                      <li>UI/UX changes</li>
+                      <li>Frontend components</li>
+                      <li>Styling and layouts</li>
+                      <li>Navigation flows</li>
+                    </ul>
+                  </div>
+
+                  <div class="card">
+                    <h3 style="margin-top: 0;">⏱️ Auto-Cleanup</h3>
+                    <p>This preview environment will be automatically deleted when the PR is closed or merged.</p>
+                  </div>
+                </div>
+                <div class="footer">
+                  <p>Zazmic CRM - Automated Deployment System</p>
+                  <p>This is an automated email from GitHub Actions</p>
+                </div>
+              </div>
+            </body>
+            </html>
+        continue-on-error: true
+
+  # ============================================================
+  # Cleanup Preview Environment on PR Close
+  # ============================================================
+  cleanup-preview:
+    name: Cleanup Preview
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    
+    steps:
+      - name: 🔐 Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_PRODUCTION }}
+
+      - name: ☁️ Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: 🗑️ Delete preview services
+        run: |
+          echo "Deleting preview environment for PR #${{ github.event.pull_request.number }}..."
+          
+          gcloud run services delete pr-${{ github.event.pull_request.number }}-backend \
+            --region ${{ env.GCP_REGION }} \
+            --quiet || echo "Backend service not found"
+          
+          gcloud run services delete pr-${{ github.event.pull_request.number }}-frontend \
+            --region ${{ env.GCP_REGION }} \
+            --quiet || echo "Frontend service not found"
+          
+          echo "✅ Preview environment cleaned up"
+
+      - name: 💬 Comment on PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🗑️ Preview environment has been cleaned up.'
+            });
