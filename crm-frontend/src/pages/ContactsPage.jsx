@@ -8,9 +8,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Avatar gradient generator
 const getAvatarGradient = (name) => {
     const gradients = [
-        'linear-gradient(135deg, #0071E3, #32ADE6)', // blue
+        'linear-gradient(135deg, #E63946, #D62828)', // blue
         'linear-gradient(135deg, #FF9F0A, #FF3B30)', // orange-red
-        'linear-gradient(135deg, #30D158, #32ADE6)', // green-blue
+        'linear-gradient(135deg, #30D158, #D62828)', // green-blue
         'linear-gradient(135deg, #5E5CE6, #FF2D55)', // purple-pink
     ];
     if (!name) return gradients[0];
@@ -89,9 +89,9 @@ export default function ContactsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
                 <div>
-                    <h1 className="text-[40px] font-bold text-apple-text tracking-tight mb-2">Contacts</h1>
-                    <p className="text-[17px] text-apple-gray">
-                        <span className="font-semibold text-apple-text">{contacts.length}</span> people in your network
+                    <h1 className="text-[40px] font-bold text-zazmic-black tracking-tight mb-2">Contacts</h1>
+                    <p className="text-[17px] text-zazmic-gray-500">
+                        <span className="font-semibold text-zazmic-black">{contacts.length}</span> people in your network
                     </p>
                 </div>
                 {hasPermission('contacts.create') && (
@@ -106,11 +106,11 @@ export default function ContactsPage() {
             </div>
 
             {/* Toolbar */}
-            <div className="bg-white rounded-[24px] shadow-apple-sm p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="bg-white rounded-[24px] shadow-sm p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="relative w-full md:w-80">
-                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-apple-gray" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zazmic-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
                     <input
-                        className="w-full bg-apple-bg rounded-full pl-11 pr-4 py-3 text-[15px] focus:outline-none focus:border-apple-blue border border-transparent transition-all placeholder:text-apple-gray"
+                        className="w-full bg-zazmic-gray-100 rounded-full pl-11 pr-4 py-3 text-[15px] focus:outline-none focus:border-zazmic-red border border-transparent transition-all placeholder:text-zazmic-gray-500"
                         type="text"
                         placeholder="Search contacts..."
                         value={search}
@@ -121,17 +121,17 @@ export default function ContactsPage() {
 
             {/* Content Area */}
             {loading ? (
-                <div className="bg-white rounded-[24px] shadow-apple-sm p-16 flex flex-col items-center justify-center space-y-4">
-                    <div className="w-8 h-8 border-2 border-apple-blue border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-apple-gray text-[15px] font-medium">Loading contacts...</p>
+                <div className="bg-white rounded-[24px] shadow-sm p-16 flex flex-col items-center justify-center space-y-4">
+                    <div className="w-8 h-8 border-2 border-zazmic-red border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-zazmic-gray-500 text-[15px] font-medium">Loading contacts...</p>
                 </div>
             ) : contacts.length === 0 ? (
-                <div className="bg-white rounded-[24px] shadow-apple-sm p-16 text-center">
-                    <div className="w-16 h-16 bg-apple-bg rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <div className="bg-white rounded-[24px] shadow-sm p-16 text-center">
+                    <div className="w-16 h-16 bg-zazmic-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <span className="text-[32px] opacity-70">👥</span>
                     </div>
-                    <h3 className="text-[20px] font-semibold text-apple-text mb-2">No contacts found</h3>
-                    <p className="text-apple-gray max-w-sm mx-auto text-[15px] mb-8">
+                    <h3 className="text-[20px] font-semibold text-zazmic-black mb-2">No contacts found</h3>
+                    <p className="text-zazmic-gray-500 max-w-sm mx-auto text-[15px] mb-8">
                         {search
                             ? 'No results match your search. Try adjusting your terms.'
                             : 'Get started by adding your first contact.'}
@@ -143,46 +143,46 @@ export default function ContactsPage() {
                     )}
                 </div>
             ) : (
-                <div className="bg-white rounded-[24px] shadow-apple-sm overflow-hidden">
+                <div className="bg-white rounded-[24px] shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg w-12"><input type="checkbox" className="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" /></th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg">Name</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg">Email</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg">Phone</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg">Company</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg">Created</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-apple-gray uppercase tracking-wider border-b border-apple-bg text-right">Actions</th>
+                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100 w-12"><input type="checkbox" className="rounded text-zazmic-red focus:ring-zazmic-red w-4 h-4 cursor-pointer" /></th>
+                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Name</th>
+                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Email</th>
+                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Phone</th>
+                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Company</th>
+                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Created</th>
+                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginatedContacts.map((c) => (
-                                    <tr key={c.id} className="group hover:bg-apple-bg transition-colors cursor-pointer border-b border-apple-bg last:border-0">
-                                        <td className="py-4 px-6"><input type="checkbox" className="rounded text-apple-blue focus:ring-apple-blue w-4 h-4 cursor-pointer" /></td>
+                                    <tr key={c.id} className="group hover:bg-zazmic-gray-100 transition-colors cursor-pointer border-b border-zazmic-gray-100 last:border-0">
+                                        <td className="py-4 px-6"><input type="checkbox" className="rounded text-zazmic-red focus:ring-zazmic-red w-4 h-4 cursor-pointer" /></td>
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-[14px] shrink-0" style={{ background: getAvatarGradient(c.name) }}>
                                                     {c.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                                                 </div>
-                                                <Link to={`/contacts/${c.id}`} className="font-medium text-[15px] text-apple-text hover:text-apple-blue transition-colors">
+                                                <Link to={`/contacts/${c.id}`} className="font-medium text-[15px] text-zazmic-black hover:text-zazmic-red transition-colors">
                                                     {c.name}
                                                 </Link>
                                             </div>
                                         </td>
-                                        <td className="py-4 px-6 text-[15px] text-apple-gray">{c.email}</td>
-                                        <td className="py-4 px-6 text-[15px] text-apple-gray">{c.phone || '--'}</td>
+                                        <td className="py-4 px-6 text-[15px] text-zazmic-gray-500">{c.email}</td>
+                                        <td className="py-4 px-6 text-[15px] text-zazmic-gray-500">{c.phone || '--'}</td>
                                         <td className="py-4 px-6">
                                             {c.company ? (
-                                                <span className="badge" style={{ background: '#F5F5F7', color: '#6E6E73' }}>
+                                                <span className="badge" style={{ background: '#F3F4F6', color: '#6B7280' }}>
                                                     {c.company}
                                                 </span>
                                             ) : (
-                                                <span className="text-apple-gray italic text-[14px]">--</span>
+                                                <span className="text-zazmic-gray-500 italic text-[14px]">--</span>
                                             )}
                                         </td>
-                                        <td className="py-4 px-6 text-[15px] text-apple-gray">
+                                        <td className="py-4 px-6 text-[15px] text-zazmic-gray-500">
                                             {new Date(c.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="py-4 px-6 text-right">
@@ -190,13 +190,13 @@ export default function ContactsPage() {
                                                 {hasPermission('contacts.update') && (
                                                     <button
                                                         onClick={(e) => { e.preventDefault(); setEditingContact(c); }}
-                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-apple-bg text-apple-gray hover:bg-white hover:text-apple-text shadow-sm transition-all"
+                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-zazmic-gray-100 text-zazmic-gray-500 hover:bg-white hover:text-zazmic-black shadow-sm transition-all"
                                                         title="Edit"
                                                     >
                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
                                                     </button>
                                                 )}
-                                                <Link to={`/contacts/${c.id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-apple-bg text-apple-gray hover:bg-apple-blue hover:text-white shadow-sm transition-all">
+                                                <Link to={`/contacts/${c.id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-zazmic-gray-100 text-zazmic-gray-500 hover:bg-zazmic-red hover:text-white shadow-sm transition-all">
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                                                 </Link>
                                             </div>
@@ -207,21 +207,21 @@ export default function ContactsPage() {
                         </table>
                     </div>
                     {/* Pagination */}
-                    <div className="px-6 py-4 border-t border-apple-bg flex items-center justify-between text-[14px]">
-                        <div className="text-apple-gray font-medium">
+                    <div className="px-6 py-4 border-t border-zazmic-gray-100 flex items-center justify-between text-[14px]">
+                        <div className="text-zazmic-gray-500 font-medium">
                             Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, contacts.length)} of {contacts.length} contacts
                         </div>
                         <div className="flex items-center gap-2">
                             <button
-                                className="w-8 h-8 rounded-full flex items-center justify-center border border-apple-border text-apple-gray hover:bg-apple-bg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="w-8 h-8 rounded-full flex items-center justify-center border border-zazmic-gray-300 text-zazmic-gray-500 hover:bg-zazmic-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
                             </button>
-                            <button className="w-8 h-8 rounded-full flex items-center justify-center bg-apple-blue text-white font-medium">{page}</button>
+                            <button className="w-8 h-8 rounded-full flex items-center justify-center bg-zazmic-red text-white font-medium">{page}</button>
                             <button
-                                className="w-8 h-8 rounded-full flex items-center justify-center border border-apple-border text-apple-gray hover:bg-apple-bg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="w-8 h-8 rounded-full flex items-center justify-center border border-zazmic-gray-300 text-zazmic-gray-500 hover:bg-zazmic-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 onClick={() => setPage(p => (p * pageSize < contacts.length ? p + 1 : p))}
                                 disabled={page * pageSize >= contacts.length}
                             >

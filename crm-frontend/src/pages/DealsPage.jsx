@@ -4,12 +4,12 @@ import DealForm from '../components/DealForm';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PIPELINE_STAGES = [
-    { key: 'prospecting', label: 'Lead', color: '#0071E3' }, // blue
+    { key: 'prospecting', label: 'Lead', color: '#E63946' }, // blue
     { key: 'qualification', label: 'Qualified', color: '#A855F7' }, // purple
     { key: 'proposal', label: 'Proposal', color: '#FF9F0A' }, // warning/orange
     { key: 'negotiation', label: 'Negotiation', color: '#FF3B30' }, // danger/red
     { key: 'closed_won', label: 'Won', color: '#30D158' }, // success/green
-    { key: 'closed_lost', label: 'Lost', color: '#6E6E73' }, // gray
+    { key: 'closed_lost', label: 'Lost', color: '#6B7280' }, // gray
 ];
 
 export default function DealsPage() {
@@ -72,9 +72,9 @@ export default function DealsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
                 <div>
-                    <h1 className="text-[40px] font-bold text-apple-text tracking-tight mb-2">Deals Pipeline</h1>
-                    <p className="text-[17px] text-apple-gray">
-                        <span className="font-semibold text-apple-text">{deals.length}</span> deals · <span className="font-semibold text-apple-text">{formatCurrency(deals.reduce((s, d) => s + d.value, 0))}</span> total
+                    <h1 className="text-[40px] font-bold text-zazmic-black tracking-tight mb-2">Deals Pipeline</h1>
+                    <p className="text-[17px] text-zazmic-gray-500">
+                        <span className="font-semibold text-zazmic-black">{deals.length}</span> deals · <span className="font-semibold text-zazmic-black">{formatCurrency(deals.reduce((s, d) => s + d.value, 0))}</span> total
                     </p>
                 </div>
                 <button className="btn-primary" onClick={() => setShowForm(true)}>
@@ -84,9 +84,9 @@ export default function DealsPage() {
             </div>
 
             {loading ? (
-                <div className="bg-white rounded-[24px] shadow-apple-sm p-16 flex flex-col items-center justify-center space-y-4 max-w-4xl mx-auto">
-                    <div className="w-8 h-8 border-2 border-apple-blue border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-apple-gray text-[15px] font-medium">Loading pipeline...</p>
+                <div className="bg-white rounded-[24px] shadow-sm p-16 flex flex-col items-center justify-center space-y-4 max-w-4xl mx-auto">
+                    <div className="w-8 h-8 border-2 border-zazmic-red border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-zazmic-gray-500 text-[15px] font-medium">Loading pipeline...</p>
                 </div>
             ) : (
                 /* Kanban Board — horizontal scroll with snap */
@@ -94,18 +94,18 @@ export default function DealsPage() {
                     {groupedDeals.map((stage) => (
                         <div
                             key={stage.key}
-                            className="w-[320px] min-w-[320px] shrink-0 snap-start bg-[#F5F5F7] rounded-[24px] p-4 border border-apple-border/50 flex flex-col h-[calc(100vh-280px)] min-h-[600px] overflow-hidden"
+                            className="w-[320px] min-w-[320px] shrink-0 snap-start bg-[#F3F4F6] rounded-[24px] p-4 border border-zazmic-gray-300/50 flex flex-col h-[calc(100vh-280px)] min-h-[600px] overflow-hidden"
                         >
                             {/* Column header */}
                             <div className="flex items-center justify-between mb-4 px-2">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <h3 className="font-semibold text-[15px] text-apple-text uppercase tracking-widest">{stage.label}</h3>
-                                        <span className="bg-white shadow-sm border border-apple-border rounded-full px-2 py-0.5 text-[12px] font-bold text-apple-text">
+                                        <h3 className="font-semibold text-[15px] text-zazmic-black uppercase tracking-widest">{stage.label}</h3>
+                                        <span className="bg-white shadow-sm border border-zazmic-gray-300 rounded-full px-2 py-0.5 text-[12px] font-bold text-zazmic-black">
                                             {stage.deals.length}
                                         </span>
                                     </div>
-                                    <p className="text-[14px] text-apple-gray mt-1 font-medium">
+                                    <p className="text-[14px] text-zazmic-gray-500 mt-1 font-medium">
                                         {formatCurrency(stage.total)}
                                     </p>
                                 </div>
@@ -116,7 +116,7 @@ export default function DealsPage() {
                             <div className="flex-1 overflow-y-auto px-1 pb-4 space-y-3 custom-scrollbar">
                                 <AnimatePresence>
                                     {stage.deals.length === 0 ? (
-                                        <div className="text-[14px] text-apple-gray text-center py-8">No deals</div>
+                                        <div className="text-[14px] text-zazmic-gray-500 text-center py-8">No deals</div>
                                     ) : (
                                         stage.deals.map((deal) => (
                                             <motion.div
@@ -126,31 +126,31 @@ export default function DealsPage() {
                                                 exit={{ opacity: 0, scale: 0.95 }}
                                                 transition={{ duration: 0.2 }}
                                                 key={deal.id}
-                                                className="bg-white rounded-[16px] p-5 shadow-apple-sm hover:shadow-apple-md transition-all cursor-pointer group border border-transparent hover:border-black/5"
+                                                className="bg-white rounded-[16px] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group border border-transparent hover:border-black/5"
                                             >
                                                 <div className="flex items-start justify-between mb-3">
-                                                    <h4 className="font-semibold text-[17px] leading-tight text-apple-text pr-4">{deal.title}</h4>
+                                                    <h4 className="font-semibold text-[17px] leading-tight text-zazmic-black pr-4">{deal.title}</h4>
                                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setEditingDeal(deal); }}
-                                                            className="text-apple-gray hover:text-apple-blue transition-colors p-1"
+                                                            className="text-zazmic-gray-500 hover:text-zazmic-red transition-colors p-1"
                                                         >
                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
                                                         </button>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleDelete(deal.id); }}
-                                                            className="text-apple-gray hover:text-danger transition-colors p-1"
+                                                            className="text-zazmic-gray-500 hover:text-danger transition-colors p-1"
                                                         >
                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" /></svg>
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                <p className="text-[20px] font-bold text-apple-text mb-4 tracking-tight">
+                                                <p className="text-[20px] font-bold text-zazmic-black mb-4 tracking-tight">
                                                     {formatCurrency(deal.value)}
                                                 </p>
 
-                                                <div className="flex items-center text-[13px] text-apple-gray mb-3 pb-3 border-b border-[#F5F5F7]">
+                                                <div className="flex items-center text-[13px] text-zazmic-gray-500 mb-3 pb-3 border-b border-[#F3F4F6]">
                                                     <span className="truncate">{deal.contact?.name || deal.account?.name || 'No assigned entity'}</span>
                                                 </div>
 
@@ -160,7 +160,7 @@ export default function DealsPage() {
                                                         <button
                                                             key={s.key}
                                                             onClick={(e) => { e.stopPropagation(); handleStageChange(deal, s.key); }}
-                                                            className="text-[11px] px-2 py-1 rounded bg-[#F5F5F7] text-apple-gray hover:bg-apple-blue hover:text-white transition-colors"
+                                                            className="text-[11px] px-2 py-1 rounded bg-[#F3F4F6] text-zazmic-gray-500 hover:bg-zazmic-red hover:text-white transition-colors"
                                                             title={`Move to ${s.label}`}
                                                         >
                                                             {s.label} →

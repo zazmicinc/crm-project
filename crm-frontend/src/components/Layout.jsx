@@ -4,12 +4,28 @@ import { useAuth } from '../context/AuthContext';
 import { searchApi } from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const navItems = [
-    { path: '/', label: 'Overview' },
-    { path: '/leads', label: 'Leads' },
-    { path: '/contacts', label: 'Contacts' },
-    { path: '/accounts', label: 'Accounts' },
-    { path: '/deals', label: 'Pipeline' },
+const sidebarSections = [
+    {
+        title: 'Main',
+        items: [
+            { path: '/', label: 'Home', icon: '🏠' },
+        ]
+    },
+    {
+        title: 'Sales',
+        items: [
+            { path: '/leads', label: 'Leads', icon: '🎯' },
+            { path: '/contacts', label: 'Contacts', icon: '👥' },
+            { path: '/accounts', label: 'Accounts', icon: '🏢' },
+            { path: '/deals', label: 'Deals', icon: '💼' },
+        ]
+    },
+    {
+        title: 'Activities',
+        items: [
+            { path: '/tasks', label: 'Tasks', icon: '📋' },
+        ]
+    }
 ];
 
 export default function Layout({ children }) {
@@ -82,178 +98,203 @@ export default function Layout({ children }) {
     };
 
     return (
-        <div className="min-h-screen bg-apple-bg text-apple-text font-sans">
-            {/* ── Top Navigation Bar ────────────────────────────────────────────── */}
-            <header className="fixed top-0 left-0 right-0 z-50 h-12 bg-white/80 backdrop-blur-[20px] border-b border-black/10 flex items-center justify-between px-6 transition-all">
-
-                {/* Left: Logo */}
-                <div className="flex items-center shrink-0">
-                    <Link to="/" className="flex items-center gap-2">
-                        {/* Example logo text if no image exists */}
-                        <span className="font-semibold text-[17px] text-apple-text">Zazmic CRM</span>
-                    </Link>
+        <div className="app-container flex min-h-screen bg-[#F9FAFB] font-primary gap-4 md:gap-6 lg:gap-8">
+            {/* ── Sidebar Navigation ────────────────────────────────────────────── */}
+            <aside className="sidebar hidden md:flex flex-col w-[245px] shrink-0 sticky top-0 h-screen bg-[#2D2D2D] z-40 border-r border-white/10 overflow-y-auto">
+                {/* Logo Area */}
+                <div className="h-16 flex items-center justify-center shrink-0 w-full mb-4 px-4 pt-4">
+                    <div className="bg-[#E63946] text-white font-bold text-xl rounded-lg h-10 w-full flex items-center justify-center">
+                        <Link to="/">ZAZMIC</Link>
+                    </div>
                 </div>
 
-                {/* Center: Desktop Nav */}
-                <nav className="hidden md:flex items-center gap-6">
-                    {navItems.map((item) => {
-                        const active = isActive(item.path);
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`text-[14px] transition-colors ${active
-                                    ? 'text-apple-blue font-medium'
-                                    : 'text-apple-text hover:text-apple-blue font-medium opacity-80'
-                                    }`}
-                            >
-                                {item.label}
-                            </Link>
-                        );
-                    })}
-                </nav>
-
-                {/* Right: Search & User Actions */}
-                <div className="flex items-center justify-end gap-6">
-
-                    {/* Global Search */}
-                    <div className="hidden sm:block relative w-64" ref={searchRef}>
-                        <div className="flex items-center bg-apple-bg rounded-full border border-transparent focus-within:bg-white focus-within:border-apple-blue transition-all px-3 py-1.5 gap-2">
-                            <svg className="shrink-0 w-4 h-4 text-apple-gray" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                            <input
-                                placeholder="Search"
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                onFocus={() => query.length >= 2 && setShowResults(true)}
-                                className="bg-transparent text-[14px] w-full focus:outline-none placeholder:text-apple-gray"
-                            />
-                            {isSearching && (
-                                <div className="shrink-0">
-                                    <div className="animate-spin h-3 w-3 border-2 border-apple-blue border-t-transparent rounded-full"></div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Search Results Dropdown */}
-                        <AnimatePresence>
-                            {showResults && results.length > 0 && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    className="absolute top-full mt-2 left-0 right-0 bg-white/90 backdrop-blur-[20px] rounded-2xl shadow-apple-lg border border-black/5 overflow-hidden max-h-[400px] overflow-y-auto z-[60]"
-                                >
-                                    {['lead', 'contact', 'account', 'deal'].map(type => {
-                                        const typeResults = results.filter(r => r.type === type);
-                                        if (typeResults.length === 0) return null;
-                                        return (
-                                            <div key={type} className="border-b border-black/5 last:border-0">
-                                                <div className="px-4 py-2 bg-apple-bg/50 text-[10px] uppercase tracking-wider text-apple-gray font-semibold">
-                                                    {type}s
-                                                </div>
-                                                {typeResults.map(r => (
-                                                    <button
-                                                        key={`${r.type}-${r.id}`}
-                                                        onClick={() => handleResultClick(r)}
-                                                        className="w-full px-4 py-3 flex flex-col hover:bg-black/5 transition-colors text-left"
-                                                    >
-                                                        <span className="text-[14px] font-medium text-apple-text truncate">{r.title}</span>
-                                                        <span className="text-[12px] text-apple-gray truncate mt-0.5">{r.subtitle}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        );
-                                    })}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    <div className="hidden sm:flex items-center gap-4">
-                        <span className="text-[14px] font-medium text-apple-text">{user?.first_name}</span>
-                        {isAdmin && (
-                            <>
-                                <Link to="/admin/users" className="text-apple-gray hover:text-apple-blue transition-colors text-sm font-medium" title="Users">Admin</Link>
-                                <Link to="/settings/pipelines" className="text-apple-gray hover:text-apple-blue transition-colors text-sm font-medium" title="Settings">Settings</Link>
-                            </>
-                        )}
-                        <button
-                            onClick={handleLogout}
-                            className="text-[14px] font-medium text-apple-gray hover:text-danger transition-colors"
-                            title="Logout"
-                        >
-                            Log Out
-                        </button>
-                    </div>
-
-                    {/* Mobile hamburger */}
-                    <button
-                        className="md:hidden text-apple-text p-1"
-                        onClick={() => setMobileOpen(!mobileOpen)}
-                    >
-                        {mobileOpen ? (
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        ) : (
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
-                        )}
-                    </button>
-                </div>
-            </header>
-
-            {/* Mobile Nav Dropdown */}
-            <AnimatePresence>
-                {mobileOpen && (
-                    <motion.nav
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="md:hidden fixed top-12 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-black/10 overflow-hidden"
-                    >
-                        <div className="p-6 flex flex-col gap-4">
-                            {/* Mobile Search */}
-                            <div>
-                                <input
-                                    className="w-full bg-apple-bg rounded-lg px-4 py-2 text-[14px] focus:outline-none focus:border-apple-blue border border-transparent"
-                                    placeholder="Search..."
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                />
+                {/* Navigation Links */}
+                <nav className="flex-1 px-2 py-4">
+                    {sidebarSections.map((section, idx) => (
+                        <div key={idx} className="mb-6">
+                            <div className="px-4 mb-2 text-xs font-semibold text-white/50 uppercase tracking-wider">
+                                {section.title}
                             </div>
-                            {navItems.map((item) => {
+                            {section.items.map((item) => {
                                 const active = isActive(item.path);
                                 return (
                                     <Link
                                         key={item.path}
                                         to={item.path}
-                                        onClick={() => setMobileOpen(false)}
-                                        className={`text-[17px] font-medium ${active ? 'text-apple-blue' : 'text-apple-text'
-                                            }`}
+                                        className={`nav-item ${active ? 'active' : ''}`}
                                     >
-                                        {item.label}
+                                        <span className="mr-3">{item.icon}</span>
+                                        <span className="text-sm font-medium">{item.label}</span>
                                     </Link>
                                 );
                             })}
-                            <div className="h-px bg-black/10 my-2" />
-                            {isAdmin && (
-                                <Link to="/admin/users" onClick={() => setMobileOpen(false)} className="text-[17px] text-apple-gray font-medium">User Admin</Link>
-                            )}
-                            <button onClick={handleLogout} className="text-left text-[17px] text-danger font-medium mt-2">Log Out</button>
                         </div>
-                    </motion.nav>
-                )}
-            </AnimatePresence>
+                    ))}
+                    {isAdmin && (
+                        <div className="mb-6">
+                            <div className="px-4 mb-2 text-xs font-semibold text-white/50 uppercase tracking-wider">
+                                Admin
+                            </div>
+                            <Link to="/admin/users" className={`nav-item ${isActive('/admin/users') ? 'active' : ''}`}>
+                                <span className="mr-3">⚙️</span>
+                                <span className="text-sm font-medium">Users</span>
+                            </Link>
+                        </div>
+                    )}
+                </nav>
+            </aside>
 
-            {/* ── Main Content ────────────────────────────────────────────── */}
-            <main className="pt-[80px] pb-24 px-6 lg:px-8 max-w-[1200px] mx-auto min-h-screen">
-                <motion.div
-                    key={location.pathname}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-                >
-                    {children}
-                </motion.div>
+            {/* Mobile Sidebar overlay... omitted for brevity, keeping simple hamburger */}
+
+            {/* ── Main Layout Wrapper ─────────────────────────────────────────── */}
+            <main className="main-content flex-1 flex flex-col min-h-screen min-w-0">
+
+                {/* ── Top Navigation Bar ────────────────────────────────────────── */}
+                <header className="h-16 shrink-0 bg-white border-b border-[#D1D5DB] flex items-center justify-between px-6 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                    {/* Left side module title / mobile menu */}
+                    <div className="flex items-center">
+                        <button
+                            className="md:hidden text-[#4A4A4A] p-2 mr-2"
+                            onClick={() => setMobileOpen(!mobileOpen)}
+                        >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        </button>
+                        <h2 className="text-lg font-semibold text-[#1A1A1A] capitalize hidden sm:block">
+                            {location.pathname === '/' ? 'Home Dashboard' : location.pathname.split('/')[1] || 'Module'}
+                        </h2>
+                    </div>
+
+                    {/* Center / Right: Search & Actions */}
+                    <div className="flex items-center gap-4">
+                        {/* Global Search */}
+                        <div className="relative search-bar hidden sm:block w-[300px]" ref={searchRef}>
+                            <svg className="search-icon w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                            <input
+                                placeholder="Search records"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                onFocus={() => query.length >= 2 && setShowResults(true)}
+                            />
+                            {isSearching && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <div className="animate-spin h-3 w-3 border-2 border-[#E63946] border-t-transparent rounded-full"></div>
+                                </div>
+                            )}
+
+                            {/* Search Results Dropdown */}
+                            <AnimatePresence>
+                                {showResults && results.length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="absolute top-full mt-2 left-0 right-0 bg-white rounded-lg shadow-lg border border-[#D1D5DB] overflow-hidden max-h-[400px] overflow-y-auto z-[60]"
+                                    >
+                                        {['lead', 'contact', 'account', 'deal'].map(type => {
+                                            const typeResults = results.filter(r => r.type === type);
+                                            if (typeResults.length === 0) return null;
+                                            return (
+                                                <div key={type} className="border-b border-black/5 last:border-0">
+                                                    <div className="px-4 py-2 bg-[#F3F4F6] text-xs uppercase text-[#6B7280] font-semibold">
+                                                        {type}s
+                                                    </div>
+                                                    {typeResults.map(r => (
+                                                        <button
+                                                            key={`${r.type}-${r.id}`}
+                                                            onClick={() => handleResultClick(r)}
+                                                            className="w-full px-4 py-3 flex flex-col hover:bg-[#F9FAFB] transition-colors text-left"
+                                                        >
+                                                            <span className="text-sm font-medium text-[#1A1A1A] truncate">{r.title}</span>
+                                                            <span className="text-xs text-[#6B7280] truncate mt-0.5">{r.subtitle}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Topbar Icons */}
+                        <div className="flex items-center gap-1">
+                            <button className="btn-icon" title="Quick Create">➕</button>
+                            <button className="btn-icon">⚡</button>
+                            <button className="btn-icon">
+                                🔔
+                                <span className="badge">1</span>
+                            </button>
+                            <button className="btn-icon">📅</button>
+                            <button className="btn-icon">💬</button>
+                            <button className="btn-icon">⚙️</button>
+                        </div>
+
+                        {/* User Actions */}
+                        <div className="flex items-center gap-3 pl-3 border-l border-[#D1D5DB]">
+                            <div className="w-8 h-8 rounded-full bg-[#E63946] text-white flex items-center justify-center font-semibold text-sm">
+                                {user?.first_name?.charAt(0) || 'U'}
+                            </div>
+                            <div className="hidden lg:block text-sm font-medium text-[#1A1A1A]">
+                                {user?.first_name} {user?.last_name}
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="text-sm font-medium text-[#6B7280] hover:text-[#E63946] transition-colors"
+                                title="Logout"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Mobile Dropdown Menu */}
+                <AnimatePresence>
+                    {mobileOpen && (
+                        <motion.nav
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="md:hidden bg-[#2D2D2D] text-white border-t border-white/10 overflow-hidden"
+                        >
+                            <div className="p-4 flex flex-col gap-2">
+                                <input
+                                    className="w-full bg-white/10 rounded-md px-4 py-2 text-sm text-white placeholder-white/50 focus:outline-none mb-2"
+                                    placeholder="Search..."
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                />
+                                {sidebarSections.flatMap(s => s.items).map((item) => (
+                                    <Link
+                                        key={item.path}
+                                        to={item.path}
+                                        onClick={() => setMobileOpen(false)}
+                                        className="py-2 px-3 rounded hover:bg-white/10 text-sm font-medium"
+                                    >
+                                        {item.icon} <span className="ml-2">{item.label}</span>
+                                    </Link>
+                                ))}
+                                {isAdmin && (
+                                    <Link to="/admin/users" onClick={() => setMobileOpen(false)} className="py-2 px-3 rounded hover:bg-white/10 text-sm font-medium">⚙️ <span className="ml-2">Admin Options</span></Link>
+                                )}
+                            </div>
+                        </motion.nav>
+                    )}
+                </AnimatePresence>
+
+                {/* ── Main Content Area ─────────────────────────────────────────── */}
+                <div className="flex-1 p-6 lg:p-8 max-w-[1400px] w-full mx-auto">
+                    <motion.div
+                        key={location.pathname}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                    >
+                        {children}
+                    </motion.div>
+                </div>
             </main>
         </div>
     );
 }
+
