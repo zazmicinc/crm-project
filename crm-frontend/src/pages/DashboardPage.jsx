@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, AreaChart, Area
+    PieChart, Pie, Cell, AreaChart, Area,
+    LineChart, Line, FunnelChart, Funnel, LabelList, Legend
 } from 'recharts';
 import { dashboardApi } from '../api';
-import { motion } from 'framer-motion';
 
-const PIE_COLORS = ['#0071E3', '#5E5CE6', '#30D158', '#FF9F0A', '#FF3B30', '#32ADE6'];
+const ZAZMIC_COLORS = ['#E63946', '#2B2D42', '#8D99AE', '#000000', '#D90429', '#EF233C'];
 
 export default function DashboardPage() {
     const [summary, setSummary] = useState(null);
     const [funnel, setFunnel] = useState([]);
     const [activityStats, setActivityStats] = useState({ types: [], trend: [] });
     const [loading, setLoading] = useState(true);
+    const [activeView, setActiveView] = useState('org'); // 'org', 'deals', 'leads'
 
     useEffect(() => {
         const fetchData = async () => {
@@ -36,178 +37,297 @@ export default function DashboardPage() {
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="w-8 h-8 border-2 border-apple-blue border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-6 h-6 border-2 border-zazmic-red border-t-transparent rounded-full animate-spin"></div>
         </div>
     );
 
     const formatCurrency = (v) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
 
+    // Mock data for Lead Analytics and Deal Insights
+    const leadSources = [
+        { name: 'Organic', value: 400 },
+        { name: 'Referral', value: 300 },
+        { name: 'Social', value: 300 },
+        { name: 'Direct', value: 200 },
+    ];
+
+    const conversionData = [
+        { name: 'Converted', value: 75, fill: '#E63946' },
+        { name: 'Lost', value: 25, fill: '#E5E7EB' }
+    ];
+
     return (
-        <div className="animate-fade-in pb-12">
-            {/* Header */}
-            <div className="mb-12">
-                <h1 className="text-[40px] font-bold text-apple-text tracking-tight mb-2">Executive Overview</h1>
-                <p className="text-[17px] text-apple-gray">Real-time sales performance and activity metrics</p>
+        <div className="pb-8 bg-gray-50 min-h-screen text-gray-900">
+            {/* Header & Controls */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-black mb-1">Analytics Dashboard</h1>
+                    <p className="text-sm text-gray-500">Comprehensive real-time reporting & insights</p>
+                </div>
+                <div className="flex bg-gray-100 p-1 rounded-md border border-gray-200">
+                    <button
+                        onClick={() => setActiveView('org')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded transition-colors ${activeView === 'org' ? 'bg-white shadow-sm border border-gray-200 text-black' : 'text-gray-600 hover:text-black'}`}
+                    >
+                        Org Overview
+                    </button>
+                    <button
+                        onClick={() => setActiveView('deals')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded transition-colors ${activeView === 'deals' ? 'bg-white shadow-sm border border-gray-200 text-black' : 'text-gray-600 hover:text-black'}`}
+                    >
+                        Deal Insights
+                    </button>
+                    <button
+                        onClick={() => setActiveView('leads')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded transition-colors ${activeView === 'leads' ? 'bg-white shadow-sm border border-gray-200 text-black' : 'text-gray-600 hover:text-black'}`}
+                    >
+                        Lead Analytics
+                    </button>
+                </div>
             </div>
 
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <StatCard label="Total Pipeline" value={formatCurrency(summary.total_value)} change="↑ 12% vs last month" />
-                <StatCard label="Open Deals" value={summary.deals} change="5 closing this week" />
-                <StatCard label="Active Leads" value={summary.leads} change="↑ 8 new today" />
-                <StatCard label="Total Contacts" value={summary.contacts} change="Active network" />
-            </div>
+            <div className="px-6">
+                {/* Responsive Grid: 4 cols -> 3 cols -> 2 cols -> 1 col */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+                    <StatCard label="Total Pipeline" value={formatCurrency(summary.total_value)} change="+12% vs last month" bg="bg-white" textColor="text-zazmic-red" />
+                    <StatCard label="Open Deals" value={summary.deals} change="5 closing this week" bg="bg-white" />
+                    <StatCard label="Active Leads" value={summary.leads} change="+8 new today" bg="bg-white" />
+                    <StatCard label="Total Contacts" value={summary.contacts} change="Active network" bg="bg-white" />
+                </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                {/* Funnel Chart */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                    className="lg:col-span-2 bg-white rounded-3xl shadow-apple-sm p-8"
-                >
-                    <h3 className="text-[20px] font-semibold mb-8 text-apple-text">Sales Funnel (Deal Value)</h3>
-                    <div className="h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={funnel}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#F5F5F7" vertical={false} />
-                                <XAxis dataKey="stage" stroke="#6E6E73" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                                <YAxis stroke="#6E6E73" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v / 1000}k`} dx={-10} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #D2D2D7', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}
-                                    itemStyle={{ color: '#1D1D1F', fontWeight: 500 }}
-                                    cursor={{ fill: '#F5F5F7' }}
-                                />
-                                <Bar dataKey="value" fill="#0071E3" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </motion.div>
-
-                {/* Activity Pie */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                    className="bg-white rounded-3xl shadow-apple-sm p-8"
-                >
-                    <h3 className="text-[20px] font-semibold mb-6 text-apple-text">Activity Mix</h3>
-                    <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={activityStats.types}
-                                    innerRadius={60}
-                                    outerRadius={90}
-                                    paddingAngle={2}
-                                    dataKey="count"
-                                    nameKey="type"
-                                    stroke="none"
-                                >
-                                    {activityStats.types.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #D2D2D7', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}
-                                    itemStyle={{ color: '#1D1D1F', fontWeight: 500 }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <div className="mt-4 grid grid-cols-2 gap-y-3 gap-x-2">
-                        {activityStats.types.map((t, i) => (
-                            <div key={t.type} className="flex items-center gap-2 text-[14px] text-apple-gray">
-                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}></div>
-                                <span className="capitalize truncate">{t.type}</span>
-                                <span className="ml-auto font-semibold text-apple-text">{t.count}</span>
+                {/* View Conditional Rendering */}
+                {activeView === 'org' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        {/* Area Chart: Activity Trend */}
+                        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg p-5">
+                            <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-black border-b border-gray-100 pb-2">Activity Trend (7 Days)</h3>
+                            <div className="h-[300px] w-full mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={activityStats.trend} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                        <XAxis dataKey="date" stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ borderRadius: '4px', border: '1px solid #D1D5DB' }} />
+                                        <Area type="monotone" dataKey="count" stroke="#000000" fill="#E63946" strokeWidth={2} fillOpacity={0.1} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
-                        ))}
-                    </div>
-                </motion.div>
-            </div>
+                        </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Trend Chart */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                    className="bg-white rounded-3xl shadow-apple-sm p-8"
-                >
-                    <h3 className="text-[20px] font-semibold mb-8 text-apple-text">Activity Trend (7 Days)</h3>
-                    <div className="h-[250px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={activityStats.trend} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#0071E3" stopOpacity={0.2} />
-                                        <stop offset="95%" stopColor="#0071E3" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <XAxis dataKey="date" stroke="#6E6E73" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                                <YAxis stroke="#6E6E73" fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #D2D2D7', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}
-                                    itemStyle={{ color: '#1D1D1F', fontWeight: 500 }}
-                                />
-                                <Area type="monotone" dataKey="count" stroke="#0071E3" fillOpacity={1} fill="url(#colorTrend)" strokeWidth={3} />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </motion.div>
-
-                {/* Recent Deals Table */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                    className="bg-white rounded-3xl shadow-apple-sm p-8 overflow-hidden"
-                >
-                    <h3 className="text-[20px] font-semibold mb-6 flex items-center gap-2 text-apple-text">
-                        Recent Deals
-                    </h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr>
-                                    <th className="pb-4 pt-0 px-2">Deal</th>
-                                    <th className="pb-4 pt-0">Stage</th>
-                                    <th className="pb-4 pt-0 text-right pr-2">Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {summary.recent_deals.map(d => (
-                                    <tr key={d.id} className="border-b border-apple-bg last:border-0 hover:bg-apple-bg/50 transition-colors">
-                                        <td className="py-4 px-2 text-[15px] font-medium text-apple-text">{d.title}</td>
-                                        <td className="py-4">
-                                            <span className={`badge badge-${d.stage.split('_')[0]}`}>
-                                                {d.stage.replace('_', ' ')}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 pr-2 text-right text-[15px] font-medium text-apple-text">{formatCurrency(d.value)}</td>
-                                    </tr>
+                        {/* Pie Chart: Activity Mix */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-5">
+                            <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-black border-b border-gray-100 pb-2">Activity Mix</h3>
+                            <div className="h-[250px] w-full mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={activityStats.types}
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={2}
+                                            dataKey="count"
+                                            nameKey="type"
+                                            stroke="none"
+                                        >
+                                            {activityStats.types.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={ZAZMIC_COLORS[index % ZAZMIC_COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip contentStyle={{ borderRadius: '4px', border: '1px solid #D1D5DB' }} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                {activityStats.types.map((t, i) => (
+                                    <div key={t.type} className="flex items-center text-xs text-gray-600">
+                                        <div className="w-2 h-2 mr-2" style={{ backgroundColor: ZAZMIC_COLORS[i % ZAZMIC_COLORS.length] }}></div>
+                                        <span className="capitalize">{t.type}</span>
+                                        <span className="ml-auto font-bold text-black">{t.count}</span>
+                                    </div>
                                 ))}
-                            </tbody>
-                        </table>
+                            </div>
+                        </div>
+
+                        {/* Data Table: Recent Deals */}
+                        <div className="lg:col-span-3 bg-white border border-gray-200 rounded-lg p-0 overflow-hidden">
+                            <div className="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-black">Recent Deals Pipeline</h3>
+                                <button className="text-sm text-zazmic-red hover:underline font-medium">View All</button>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse min-w-[600px]">
+                                    <thead>
+                                        <tr className="bg-white border-b border-gray-200 text-xs text-gray-500 uppercase">
+                                            <th className="font-semibold p-4">Deal Name</th>
+                                            <th className="font-semibold p-4">Current Stage</th>
+                                            <th className="font-semibold p-4 text-right">Estimated Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-sm text-gray-800">
+                                        {summary.recent_deals.map((d, i) => (
+                                            <tr key={d.id} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-100 hover:bg-gray-100`}>
+                                                <td className="p-4 font-medium">{d.title}</td>
+                                                <td className="p-4">
+                                                    <span className="px-2 py-1 text-xs rounded border border-gray-300 bg-white font-medium capitalize">
+                                                        {d.stage.replace('_', ' ')}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-right font-bold">{formatCurrency(d.value)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                </motion.div>
+                )}
+
+                {activeView === 'deals' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        {/* Funnel Chart */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-5">
+                            <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-black border-b border-gray-100 pb-2">Sales Funnel</h3>
+                            <div className="h-[350px] w-full mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <FunnelChart>
+                                        <Tooltip contentStyle={{ borderRadius: '4px' }} />
+                                        <Funnel
+                                            dataKey="value"
+                                            data={funnel.map((f, i) => ({ ...f, fill: ZAZMIC_COLORS[i % ZAZMIC_COLORS.length] }))}
+                                            isAnimationActive
+                                        >
+                                            <LabelList position="right" fill="#000" stroke="none" dataKey="stage" fontSize={12} />
+                                        </Funnel>
+                                    </FunnelChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Bar Chart: Pipeline by Stage */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-5">
+                            <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-black border-b border-gray-100 pb-2">Pipeline Value by Stage</h3>
+                            <div className="h-[350px] w-full mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={funnel} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E5E7EB" />
+                                        <XAxis type="number" stroke="#6B7280" fontSize={12} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
+                                        <YAxis dataKey="stage" type="category" stroke="#6B7280" fontSize={12} axisLine={false} tickLine={false} width={100} />
+                                        <Tooltip contentStyle={{ borderRadius: '4px' }} cursor={{ fill: '#F3F4F6' }} />
+                                        <Bar dataKey="value" fill="#E63946" barSize={20} radius={[0, 4, 4, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg p-5">
+                            <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-black border-b border-gray-100 pb-2">Deal Velocity</h3>
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={activityStats.trend}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                        <XAxis dataKey="date" stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ borderRadius: '4px' }} />
+                                        <Line type="monotone" dataKey="count" stroke="#000000" strokeWidth={3} dot={{ stroke: '#E63946', strokeWidth: 2, r: 4, fill: '#FAF9F6' }} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeView === 'leads' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        {/* Gauge Chart (Half Pie) for Conversion Rate */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-5 flex flex-col items-center">
+                            <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-black border-b border-gray-100 pb-2 w-full text-left">Conversion Rate</h3>
+                            <div className="h-[200px] w-full mt-4 relative">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={conversionData}
+                                            cx="50%"
+                                            cy="100%"
+                                            startAngle={180}
+                                            endAngle={0}
+                                            innerRadius={70}
+                                            outerRadius={100}
+                                            paddingAngle={0}
+                                            dataKey="value"
+                                            stroke="none"
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-x-0 bottom-4 flex flex-col items-center">
+                                    <span className="text-4xl font-bold text-black">75%</span>
+                                    <span className="text-xs text-gray-500 uppercase tracking-wide">Avg Target 60%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bar Chart: Lead Sources */}
+                        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg p-5">
+                            <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-black border-b border-gray-100 pb-2">Lead Sources</h3>
+                            <div className="h-[250px] w-full mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={leadSources} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                        <XAxis dataKey="name" stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ borderRadius: '4px', border: '1px solid #D1D5DB' }} cursor={{ fill: '#F3F4F6' }} />
+                                        <Bar dataKey="value" fill="#2B2D42" radius={[4, 4, 0, 0]} barSize={40} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Data Table: Lead Pipeline */}
+                        <div className="lg:col-span-3 bg-white border border-gray-200 rounded-lg p-0 overflow-hidden">
+                            <div className="p-5 border-b border-gray-200 bg-gray-50">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-black">Top Growing Sources</h3>
+                            </div>
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-white border-b border-gray-200 text-xs text-gray-500 uppercase">
+                                        <th className="font-semibold p-4">Source Channel</th>
+                                        <th className="font-semibold p-4 text-right">Volume</th>
+                                        <th className="font-semibold p-4 text-right">Conversion (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm text-gray-800">
+                                    {leadSources.map((s, i) => (
+                                        <tr key={s.name} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-100 hover:bg-gray-100`}>
+                                            <td className="p-4 font-medium">{s.name}</td>
+                                            <td className="p-4 text-right font-bold">{s.value}</td>
+                                            <td className="p-4 text-right">
+                                                <span className={`px-2 py-1 rounded text-xs font-bold ${i === 0 ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-black'}`}>
+                                                    {(Math.random() * 20 + 10).toFixed(1)}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 }
 
-function StatCard({ label, value, change }) {
+function StatCard({ label, value, change, bg, textColor }) {
     return (
-        <motion.div
-            whileHover={{ y: -4, boxShadow: "0 8px 30px rgba(0,0,0,0.08)" }}
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-            className="bg-white rounded-[24px] p-8 shadow-apple-sm border border-transparent hover:border-black/[0.04]"
-        >
-            <div className="text-[14px] font-medium text-apple-gray uppercase tracking-widest mb-4">{label}</div>
-            <div className="text-[48px] font-bold text-apple-text leading-none tracking-tight mb-2">{value}</div>
-            <div className="text-[14px] text-apple-gray mt-4">{change}</div>
-        </motion.div>
+        <div className={`${bg} border border-gray-200 rounded-lg p-5 shadow-sm`}>
+            <div className="flex justify-between items-start mb-2">
+                <div className="text-xs font-bold uppercase tracking-wider text-gray-500">{label}</div>
+            </div>
+            <div className={`text-3xl font-bold tracking-tight mb-2 ${textColor || 'text-black'}`}>{value}</div>
+            <div className="text-xs text-gray-500 font-medium">
+                <span className={change.includes('+') ? 'text-green-600' : change.includes('↑') ? 'text-green-600' : ''}>{change}</span>
+            </div>
+        </div>
     );
 }
+

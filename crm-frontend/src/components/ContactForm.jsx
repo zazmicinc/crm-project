@@ -33,8 +33,8 @@ export default function ContactForm({ contact, onSubmit, onCancel }) {
     };
 
     return (
-        <div className="bg-white rounded-[24px] shadow-apple-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
-            <h2 className="text-[24px] font-semibold mb-8 text-apple-text tracking-tight">
+        <div className="bg-white rounded-[24px] shadow-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
+            <h2 className="text-[24px] font-semibold mb-8 text-zazmic-black tracking-tight">
                 {contact ? 'Edit Contact' : 'New Contact'}
             </h2>
 
@@ -47,7 +47,7 @@ export default function ContactForm({ contact, onSubmit, onCancel }) {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Name *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Name *</label>
                         <input
                             className="input-field"
                             placeholder="Jane Doe"
@@ -57,7 +57,7 @@ export default function ContactForm({ contact, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Email *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Email *</label>
                         <input
                             className="input-field"
                             type="email"
@@ -68,7 +68,7 @@ export default function ContactForm({ contact, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Phone</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Phone</label>
                         <input
                             className="input-field"
                             placeholder="+1-555-0100"
@@ -77,7 +77,7 @@ export default function ContactForm({ contact, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Company</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Company</label>
                         <input
                             className="input-field"
                             placeholder="Acme Corp"
@@ -87,7 +87,7 @@ export default function ContactForm({ contact, onSubmit, onCancel }) {
                     </div>
                 </div>
                 <div>
-                    <label className="block text-[14px] font-medium text-apple-text mb-2">Notes</label>
+                    <label className="block text-[14px] font-medium text-zazmic-black mb-2">Notes</label>
                     <textarea
                         className="input-field min-h-[100px] resize-y"
                         placeholder="Key decision maker, met at conference..."
@@ -95,7 +95,7 @@ export default function ContactForm({ contact, onSubmit, onCancel }) {
                         onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     />
                 </div>
-                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-apple-bg">
+                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-zazmic-gray-100">
                     <button type="submit" className="btn-primary">{contact ? 'Update' : 'Create'} Contact</button>
                     <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
                 </div>

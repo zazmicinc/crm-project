@@ -48,8 +48,8 @@ export default function UserForm({ user, onSubmit, onCancel }) {
     };
 
     return (
-        <div className="bg-white rounded-[24px] shadow-apple-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
-            <h2 className="text-[24px] font-semibold mb-8 text-apple-text tracking-tight">
+        <div className="bg-white rounded-[24px] shadow-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
+            <h2 className="text-[24px] font-semibold mb-8 text-zazmic-black tracking-tight">
                 {user ? 'Edit User' : 'New User'}
             </h2>
 
@@ -62,7 +62,7 @@ export default function UserForm({ user, onSubmit, onCancel }) {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">First Name *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">First Name *</label>
                         <input
                             className="input-field"
                             value={form.first_name}
@@ -71,7 +71,7 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Last Name *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Last Name *</label>
                         <input
                             className="input-field"
                             value={form.last_name}
@@ -80,7 +80,7 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Email *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Email *</label>
                         <input
                             className="input-field"
                             type="email"
@@ -90,7 +90,7 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Role *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Role *</label>
                         <select
                             className="input-field"
                             value={form.role_id}
@@ -104,7 +104,7 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">
                             {user ? 'New Password (leave blank to keep current)' : 'Password *'}
                         </label>
                         <input
@@ -121,13 +121,13 @@ export default function UserForm({ user, onSubmit, onCancel }) {
                             id="is_active"
                             checked={form.is_active}
                             onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                            className="w-4 h-4 rounded text-apple-blue focus:ring-apple-blue border-[#D2D2D7]"
+                            className="w-4 h-4 rounded text-zazmic-red focus:ring-zazmic-red border-[#D1D5DB]"
                         />
-                        <label htmlFor="is_active" className="text-[14px] font-medium text-apple-text cursor-pointer">Active User</label>
+                        <label htmlFor="is_active" className="text-[14px] font-medium text-zazmic-black cursor-pointer">Active User</label>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-apple-bg">
+                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-zazmic-gray-100">
                     <button type="submit" className="btn-primary">
                         {user ? 'Update' : 'Create'} User
                     </button>

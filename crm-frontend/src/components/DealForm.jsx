@@ -47,8 +47,8 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
     };
 
     return (
-        <div className="bg-white rounded-[24px] shadow-apple-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
-            <h2 className="text-[24px] font-semibold mb-8 text-apple-text tracking-tight">
+        <div className="bg-white rounded-[24px] shadow-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
+            <h2 className="text-[24px] font-semibold mb-8 text-zazmic-black tracking-tight">
                 {deal ? 'Edit Deal' : 'New Deal'}
             </h2>
 
@@ -61,7 +61,7 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Title *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Title *</label>
                         <input
                             className="input-field"
                             placeholder="Enterprise Plan"
@@ -71,7 +71,7 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Value ($) *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Value ($) *</label>
                         <input
                             className="input-field"
                             type="number"
@@ -84,7 +84,7 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Stage *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Stage *</label>
                         <select
                             className="input-field"
                             value={form.stage}
@@ -96,7 +96,7 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-[14px] font-medium text-apple-text mb-2">Contact *</label>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Contact *</label>
                         <select
                             className="input-field"
                             value={form.contact_id}
@@ -110,7 +110,7 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                         </select>
                     </div>
                 </div>
-                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-apple-bg">
+                <div className="flex items-center gap-4 pt-6 mt-8 border-t border-zazmic-gray-100">
                     <button type="submit" className="btn-primary">{deal ? 'Update' : 'Create'} Deal</button>
                     <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
                 </div>
