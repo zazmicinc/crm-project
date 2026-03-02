@@ -69,8 +69,7 @@ jobs:
         working-directory: ./frontend
         run: npm run build
         env:
-          REACT_APP_API_URL: https://zazmic-crm-prod-backend.run.app
-          REACT_APP_ENV: production
+          VITE_API_URL: https://crm-backend-1027797737108.us-central1.run.app
 
   # ============================================================
   # Job 2: Manual Approval for Production
@@ -130,8 +129,7 @@ jobs:
           npm ci
           npm run build
         env:
-          REACT_APP_API_URL: https://zazmic-crm-prod-backend.run.app
-          REACT_APP_ENV: production
+          VITE_API_URL: https://crm-backend-1027797737108.us-central1.run.app
 
       # ============================================================
       # Database Migrations
