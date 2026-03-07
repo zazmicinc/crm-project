@@ -6,11 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Deal, Contact, Pipeline, Stage, StageChange, Note, Activity, User
+from app.models import Deal, Contact, Pipeline, Stage, StageChange, Note, Activity, User, deal_contacts, DealLineItem, Product
 from app.schemas import (
     DealCreate, DealUpdate, DealResponse,
     DealMove, StageChangeResponse, TimelineEvent, TimelineEventType,
-    NoteResponse, ActivityResponse, AssignOwner
+    NoteResponse, ActivityResponse, AssignOwner,
+    DealContactAdd, DealContactResponse,
+    DealLineItemCreate, DealLineItemUpdate, DealLineItemResponse,
 )
 from app.auth import get_current_active_user, check_permissions
 
@@ -113,11 +115,16 @@ def update_deal(
         raise HTTPException(status_code=404, detail="Deal not found")
 
     update_data = updates.model_dump(exclude_unset=True)
-    
+
     if "contact_id" in update_data:
         contact = db.query(Contact).filter(Contact.id == update_data["contact_id"]).first()
         if not contact:
             raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Require loss_reason when moving to closed_lost
+    new_stage = update_data.get("stage", deal.stage)
+    if new_stage == "closed_lost" and not update_data.get("loss_reason") and not deal.loss_reason:
+        raise HTTPException(status_code=422, detail="loss_reason is required when stage is closed_lost")
 
     for field, value in update_data.items():
         setattr(deal, field, value)
@@ -289,5 +296,192 @@ def get_deal_timeline(
 
     # Sort by timestamp descending
     events.sort(key=lambda x: x["timestamp"], reverse=True)
-    
+
     return events
+
+
+# ── Deal Contacts ─────────────────────────────────────────────────────────────
+
+
+@router.get("/{deal_id}/contacts", response_model=list[DealContactResponse])
+def list_deal_contacts(
+    deal_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """List all contacts associated with a deal."""
+    if not check_permissions(current_user, "deals.read"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    deal = db.query(Deal).filter(Deal.id == deal_id).first()
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+
+    return deal.related_contacts
+
+
+@router.post("/{deal_id}/contacts", response_model=DealContactResponse, status_code=201)
+def add_deal_contact(
+    deal_id: int,
+    payload: DealContactAdd,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Associate a contact with a deal."""
+    if not check_permissions(current_user, "deals.update"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    deal = db.query(Deal).filter(Deal.id == deal_id).first()
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+
+    contact = db.query(Contact).filter(Contact.id == payload.contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Check not already linked
+    existing = db.execute(
+        deal_contacts.select().where(
+            deal_contacts.c.deal_id == deal_id,
+            deal_contacts.c.contact_id == payload.contact_id,
+        )
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Contact already linked to this deal")
+
+    db.execute(deal_contacts.insert().values(
+        deal_id=deal_id,
+        contact_id=payload.contact_id,
+        role=payload.role,
+    ))
+    db.commit()
+    return contact
+
+
+@router.delete("/{deal_id}/contacts/{contact_id}", status_code=204)
+def remove_deal_contact(
+    deal_id: int,
+    contact_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Remove a contact association from a deal."""
+    if not check_permissions(current_user, "deals.update"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    result = db.execute(
+        deal_contacts.delete().where(
+            deal_contacts.c.deal_id == deal_id,
+            deal_contacts.c.contact_id == contact_id,
+        )
+    )
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Contact not linked to this deal")
+    db.commit()
+
+
+# ── Deal Line Items ───────────────────────────────────────────────────────────
+
+
+@router.get("/{deal_id}/line-items", response_model=list[DealLineItemResponse])
+def list_line_items(
+    deal_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """List all line items for a deal."""
+    if not check_permissions(current_user, "deals.read"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    deal = db.query(Deal).filter(Deal.id == deal_id).first()
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+
+    return deal.line_items
+
+
+@router.post("/{deal_id}/line-items", response_model=DealLineItemResponse, status_code=201)
+def add_line_item(
+    deal_id: int,
+    payload: DealLineItemCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Add a product line item to a deal and recalculate deal value."""
+    if not check_permissions(current_user, "deals.update"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    deal = db.query(Deal).filter(Deal.id == deal_id).first()
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+
+    product = db.query(Product).filter(Product.id == payload.product_id, Product.is_active == True).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    item = DealLineItem(**payload.model_dump(), deal_id=deal_id)
+    db.add(item)
+    db.flush()
+
+    # Recalculate deal value from all line items
+    db.refresh(item)
+    all_items = db.query(DealLineItem).filter(DealLineItem.deal_id == deal_id).all()
+    deal.value = sum(i.subtotal for i in all_items)
+
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.put("/{deal_id}/line-items/{item_id}", response_model=DealLineItemResponse)
+def update_line_item(
+    deal_id: int,
+    item_id: int,
+    payload: DealLineItemUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Update a line item and recalculate deal value."""
+    if not check_permissions(current_user, "deals.update"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    item = db.query(DealLineItem).filter(DealLineItem.id == item_id, DealLineItem.deal_id == deal_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Line item not found")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(item, field, value)
+    db.flush()
+
+    deal = db.query(Deal).filter(Deal.id == deal_id).first()
+    all_items = db.query(DealLineItem).filter(DealLineItem.deal_id == deal_id).all()
+    deal.value = sum(i.subtotal for i in all_items)
+
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.delete("/{deal_id}/line-items/{item_id}", status_code=204)
+def delete_line_item(
+    deal_id: int,
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Delete a line item and recalculate deal value."""
+    if not check_permissions(current_user, "deals.update"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    item = db.query(DealLineItem).filter(DealLineItem.id == item_id, DealLineItem.deal_id == deal_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Line item not found")
+
+    db.delete(item)
+    db.flush()
+
+    deal = db.query(Deal).filter(Deal.id == deal_id).first()
+    remaining = db.query(DealLineItem).filter(DealLineItem.deal_id == deal_id).all()
+    deal.value = sum(i.subtotal for i in remaining)
+
+    db.commit()

@@ -10,12 +10,18 @@ const STAGES = [
     { value: 'closed_lost', label: 'Lost' },
 ];
 
+const LOSS_REASONS = ['Price', 'Competitor', 'No Budget', 'No Decision', 'Timing', 'Product Fit', 'Other'];
+
 export default function DealForm({ deal, onSubmit, onCancel }) {
     const [form, setForm] = useState({
         title: '',
         value: '',
         stage: 'prospecting',
         contact_id: '',
+        close_date: '',
+        probability_override: '',
+        loss_reason: '',
+        loss_reason_note: '',
     });
     const [contacts, setContacts] = useState([]);
     const [error, setError] = useState('');
@@ -31,6 +37,10 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                 value: deal.value ?? '',
                 stage: deal.stage || 'prospecting',
                 contact_id: deal.contact_id ?? '',
+                close_date: deal.close_date ? deal.close_date.split('T')[0] : '',
+                probability_override: deal.probability_override ?? '',
+                loss_reason: deal.loss_reason || '',
+                loss_reason_note: deal.loss_reason_note || '',
             });
         }
     }, [deal]);
@@ -38,13 +48,27 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        if (form.stage === 'closed_lost' && !form.loss_reason) {
+            setError('Loss reason is required when stage is Closed Lost.');
+            return;
+        }
         try {
-            const payload = { ...form, value: parseFloat(form.value), contact_id: parseInt(form.contact_id) };
+            const payload = {
+                ...form,
+                value: parseFloat(form.value),
+                contact_id: parseInt(form.contact_id),
+                close_date: form.close_date ? new Date(form.close_date).toISOString() : null,
+                probability_override: form.probability_override !== '' ? parseInt(form.probability_override) : null,
+                loss_reason: form.loss_reason || null,
+                loss_reason_note: form.loss_reason_note || null,
+            };
             await onSubmit(payload);
         } catch (err) {
             setError(err.message);
         }
     };
+
+    const isLost = form.stage === 'closed_lost';
 
     return (
         <div className="bg-white rounded-[24px] shadow-lg border border-black/[0.04] p-8 animate-slide-up max-w-2xl mx-auto my-8">
@@ -109,7 +133,57 @@ export default function DealForm({ deal, onSubmit, onCancel }) {
                             ))}
                         </select>
                     </div>
+                    <div>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Close Date</label>
+                        <input
+                            className="input-field"
+                            type="date"
+                            value={form.close_date}
+                            onChange={(e) => setForm({ ...form, close_date: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Probability Override (%)</label>
+                        <input
+                            className="input-field"
+                            type="number"
+                            min="0"
+                            max="100"
+                            placeholder="e.g. 75"
+                            value={form.probability_override}
+                            onChange={(e) => setForm({ ...form, probability_override: e.target.value })}
+                        />
+                    </div>
                 </div>
+
+                {isLost && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-[12px] bg-red-50 border border-red-200">
+                        <div>
+                            <label className="block text-[14px] font-medium text-zazmic-black mb-2">Loss Reason *</label>
+                            <select
+                                className="input-field"
+                                value={form.loss_reason}
+                                onChange={(e) => setForm({ ...form, loss_reason: e.target.value })}
+                                required={isLost}
+                            >
+                                <option value="">Select a reason</option>
+                                {LOSS_REASONS.map((r) => (
+                                    <option key={r} value={r}>{r}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-[14px] font-medium text-zazmic-black mb-2">Loss Note</label>
+                            <input
+                                className="input-field"
+                                placeholder="Optional details..."
+                                value={form.loss_reason_note}
+                                onChange={(e) => setForm({ ...form, loss_reason_note: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center gap-4 pt-6 mt-8 border-t border-zazmic-gray-100">
                     <button type="submit" className="btn-primary">{deal ? 'Update' : 'Create'} Deal</button>
                     <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>

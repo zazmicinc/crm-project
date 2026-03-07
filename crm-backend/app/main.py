@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.database import engine, Base
-from app.routers import contacts, deals, activities, accounts, leads, pipelines, notes, auth, users, roles, dashboard, search
+from app.routers import contacts, deals, activities, accounts, leads, pipelines, notes, auth, users, roles, dashboard, search, products
 
 
 @asynccontextmanager
@@ -53,6 +53,7 @@ app.include_router(accounts.router)
 app.include_router(leads.router)
 app.include_router(pipelines.router)
 app.include_router(notes.router)
+app.include_router(products.router)
 
 
 # ── Global exception handler ────────────────────────────────────────────────

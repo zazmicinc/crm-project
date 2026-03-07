@@ -105,6 +105,28 @@ export const dealsApi = {
     assign: (id, userId) => request(`/deals/${id}/assign`, { method: 'PUT', body: JSON.stringify({ user_id: userId }) }),
     move: (id, stage_id) => request(`/deals/${id}/move`, { method: 'POST', body: JSON.stringify({ stage_id }) }),
     getTimeline: (id) => request(`/deals/${id}/timeline`),
+    // Related contacts
+    getContacts: (id) => request(`/deals/${id}/contacts`),
+    addContact: (id, data) => request(`/deals/${id}/contacts`, { method: 'POST', body: JSON.stringify(data) }),
+    removeContact: (id, contactId) => request(`/deals/${id}/contacts/${contactId}`, { method: 'DELETE' }),
+    // Line items
+    getLineItems: (id) => request(`/deals/${id}/line-items`),
+    addLineItem: (id, data) => request(`/deals/${id}/line-items`, { method: 'POST', body: JSON.stringify(data) }),
+    updateLineItem: (id, itemId, data) => request(`/deals/${id}/line-items/${itemId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteLineItem: (id, itemId) => request(`/deals/${id}/line-items/${itemId}`, { method: 'DELETE' }),
+};
+
+// ── Products ──────────────────────────────────────────────────────────────────
+
+export const productsApi = {
+    list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/products/${qs ? '?' + qs : ''}`);
+    },
+    get: (id) => request(`/products/${id}`),
+    create: (data) => request('/products/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/products/${id}`, { method: 'DELETE' }),
 };
 
 // ── Activities ───────────────────────────────────────────────────────────────

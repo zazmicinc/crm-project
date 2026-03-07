@@ -112,6 +112,10 @@ class DealBase(BaseModel):
     account_id: Optional[int] = Field(None, examples=[1])
     pipeline_id: Optional[int] = Field(None, examples=[1])
     stage_id: Optional[int] = Field(None, examples=[1])
+    close_date: Optional[datetime] = Field(None, examples=["2026-06-30T00:00:00"])
+    probability_override: Optional[int] = Field(None, ge=0, le=100, examples=[75])
+    loss_reason: Optional[str] = Field(None, max_length=255, examples=["Price"])
+    loss_reason_note: Optional[str] = Field(None, examples=["Customer chose a cheaper competitor"])
 
 
 class DealCreate(DealBase):
@@ -126,6 +130,10 @@ class DealUpdate(BaseModel):
     account_id: Optional[int] = None
     pipeline_id: Optional[int] = None
     stage_id: Optional[int] = None
+    close_date: Optional[datetime] = None
+    probability_override: Optional[int] = Field(None, ge=0, le=100)
+    loss_reason: Optional[str] = Field(None, max_length=255)
+    loss_reason_note: Optional[str] = None
 
 
 class DealResponse(DealBase):
@@ -136,6 +144,87 @@ class DealResponse(DealBase):
     updated_at: datetime
     account_name: Optional[str] = None
     contact_name: Optional[str] = None
+    effective_probability: Optional[int] = None
+
+
+# ── Deal Contact Schemas ──────────────────────────────────────────────────────
+
+
+class DealContactAdd(BaseModel):
+    contact_id: int
+    role: Optional[str] = Field(None, max_length=100, examples=["Decision Maker"])
+
+
+class DealContactResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    email: str
+    phone: Optional[str] = None
+    company: Optional[str] = None
+
+
+# ── Product Schemas ───────────────────────────────────────────────────────────
+
+
+class ProductBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, examples=["Enterprise License"])
+    description: Optional[str] = Field(None, examples=["Annual enterprise software license"])
+    unit_price: float = Field(..., ge=0, examples=[5000.0])
+    currency: str = Field("USD", max_length=10, examples=["USD"])
+    is_active: bool = Field(True)
+
+
+class ProductCreate(ProductBase):
+    pass
+
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    unit_price: Optional[float] = Field(None, ge=0)
+    currency: Optional[str] = Field(None, max_length=10)
+    is_active: Optional[bool] = None
+
+
+class ProductResponse(ProductBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+# ── Deal Line Item Schemas ────────────────────────────────────────────────────
+
+
+class DealLineItemBase(BaseModel):
+    product_id: int
+    quantity: float = Field(1.0, gt=0, examples=[2.0])
+    unit_price_override: Optional[float] = Field(None, ge=0, examples=[4500.0])
+    discount_pct: float = Field(0.0, ge=0, le=100, examples=[10.0])
+
+
+class DealLineItemCreate(DealLineItemBase):
+    pass
+
+
+class DealLineItemUpdate(BaseModel):
+    quantity: Optional[float] = Field(None, gt=0)
+    unit_price_override: Optional[float] = Field(None, ge=0)
+    discount_pct: Optional[float] = Field(None, ge=0, le=100)
+
+
+class DealLineItemResponse(DealLineItemBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    deal_id: int
+    subtotal: float
+    product: ProductResponse
+    created_at: datetime
+    updated_at: datetime
 
 
 # ── Activity Schemas ─────────────────────────────────────────────────────────
