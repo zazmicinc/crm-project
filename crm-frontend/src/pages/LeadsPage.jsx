@@ -94,7 +94,7 @@ export default function LeadsPage() {
                         <input
                             className="bg-zazmic-gray-100 rounded-lg pl-9 pr-4 py-2 text-[14px] w-52 focus:outline-none focus:ring-1 focus:ring-zazmic-red border border-transparent focus:border-zazmic-red transition-all placeholder:text-zazmic-gray-500"
                             type="text"
-                            placeholder="Search leads..."
+                            placeholder=""
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
