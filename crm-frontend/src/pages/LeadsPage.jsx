@@ -81,59 +81,52 @@ export default function LeadsPage() {
     return (
         <div className="animate-fade-in pb-12">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-[40px] font-bold text-zazmic-black tracking-tight mb-2">Leads</h1>
-                    <p className="text-[17px] text-zazmic-gray-500">
+                    <h1 className="text-[28px] font-bold text-zazmic-black tracking-tight mb-1">Leads</h1>
+                    <p className="text-[13px] text-zazmic-gray-500">
                         <span className="font-semibold text-zazmic-black">{leads.length}</span> leads matching filters
                     </p>
                 </div>
-                {hasPermission('leads.create') && (
-                    <button className="btn-primary" onClick={() => setShowForm(true)}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
-                        New Lead
-                    </button>
-                )}
+                <div className="flex items-center gap-3 flex-wrap justify-end">
+                    <div className="relative">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zazmic-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                        <input
+                            className="bg-zazmic-gray-100 rounded-lg pl-9 pr-4 py-2 text-[14px] w-52 focus:outline-none focus:ring-1 focus:ring-zazmic-red border border-transparent focus:border-zazmic-red transition-all placeholder:text-zazmic-gray-500"
+                            type="text"
+                            placeholder="Search leads..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex bg-zazmic-gray-100 p-1 rounded-lg overflow-x-auto">
+                        <button
+                            className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all whitespace-nowrap ${statusFilter === '' ? 'bg-white shadow-sm text-zazmic-black' : 'text-zazmic-gray-500 hover:text-zazmic-black'}`}
+                            onClick={() => setStatusFilter('')}
+                        >All</button>
+                        {['New', 'Contacted', 'Qualified', 'Converted', 'Dead'].map(status => (
+                            <button
+                                key={status}
+                                className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all whitespace-nowrap ${statusFilter === status ? 'bg-white shadow-sm text-zazmic-black' : 'text-zazmic-gray-500 hover:text-zazmic-black'}`}
+                                onClick={() => setStatusFilter(status)}
+                            >{status}</button>
+                        ))}
+                    </div>
+                    {hasPermission('leads.create') && (
+                        <button className="btn-primary" onClick={() => setShowForm(true)}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+                            New Lead
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <StatCard label="Total Leads" value={stats.total} change="↑ 12% this month" />
-                <StatCard label="Contacted" value={stats.contacted} change="30% of total" />
+                <StatCard label="Contacted" value={stats.contacted} change={`${stats.total ? Math.round(stats.contacted / stats.total * 100) : 0}% of total`} />
                 <StatCard label="Qualified" value={stats.qualified} change="↑ On track" />
-                <StatCard label="Converted" value={stats.converted} change="10% rate" />
-            </div>
-
-            {/* Toolbar */}
-            <div className="bg-white rounded-[24px] shadow-sm p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="relative w-full md:w-80">
-                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zazmic-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                    <input
-                        className="w-full bg-zazmic-gray-100 rounded-full pl-11 pr-4 py-3 text-[15px] focus:outline-none focus:border-zazmic-red border border-transparent transition-all placeholder:text-zazmic-gray-500"
-                        type="text"
-                        placeholder="Search leads..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                </div>
-
-                <div className="flex bg-zazmic-gray-100 p-1 rounded-full overflow-x-auto w-full md:w-auto scrollbar-hide">
-                    <button
-                        className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${statusFilter === '' ? 'bg-white shadow-sm text-zazmic-black' : 'text-zazmic-gray-500 hover:text-zazmic-black'}`}
-                        onClick={() => setStatusFilter('')}
-                    >
-                        All
-                    </button>
-                    {['New', 'Contacted', 'Qualified', 'Converted', 'Dead'].map(status => (
-                        <button
-                            key={status}
-                            className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${statusFilter === status ? 'bg-white shadow-sm text-zazmic-black' : 'text-zazmic-gray-500 hover:text-zazmic-black'}`}
-                            onClick={() => setStatusFilter(status)}
-                        >
-                            {status}
-                        </button>
-                    ))}
-                </div>
+                <StatCard label="Converted" value={stats.converted} change={`${stats.total ? Math.round(stats.converted / stats.total * 100) : 0}% rate`} />
             </div>
 
             {/* Table */}
@@ -236,10 +229,10 @@ export default function LeadsPage() {
 
 function StatCard({ label, value, change }) {
     return (
-        <div className="bg-white rounded-[24px] p-6 shadow-sm transition-shadow hover:shadow-md">
-            <div className="text-[13px] font-semibold text-zazmic-gray-500 uppercase tracking-widest mb-3">{label}</div>
-            <div className="text-[36px] font-bold text-zazmic-black leading-none tracking-tight mb-2">{value}</div>
-            <div className="text-[14px] text-zazmic-gray-500">{change}</div>
+        <div className="bg-white rounded-[12px] p-5 border border-zazmic-gray-300 transition-shadow hover:shadow-sm">
+            <div className="text-[11px] font-semibold text-zazmic-gray-500 uppercase tracking-wider mb-2">{label}</div>
+            <div className="text-[28px] font-bold text-zazmic-black leading-none tracking-tight mb-1">{value}</div>
+            <div className="text-[12px] text-zazmic-gray-500">{change}</div>
         </div>
     );
 }
