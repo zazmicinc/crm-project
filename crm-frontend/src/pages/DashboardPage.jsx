@@ -65,7 +65,7 @@ export default function DashboardPage() {
                     <h1 className="text-2xl font-bold text-black mb-1">Analytics Dashboard</h1>
                     <p className="text-sm text-gray-500">Comprehensive real-time reporting & insights</p>
                 </div>
-                <div className="flex bg-gray-100 p-1 rounded-md border border-gray-200">
+                <div className="inline-flex items-center bg-gray-100 p-1.5 rounded-md border border-gray-200" style={{ gap: '8px' }}>
                     <button
                         onClick={() => setActiveView('org')}
                         className={`px-4 py-1.5 text-sm font-medium rounded transition-colors ${activeView === 'org' ? 'bg-white shadow-sm border border-gray-200 text-black' : 'text-gray-600 hover:text-black'}`}

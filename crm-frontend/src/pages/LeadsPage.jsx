@@ -99,15 +99,15 @@ export default function LeadsPage() {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
-                    <div className="flex gap-2 bg-zazmic-gray-100 p-1.5 rounded-lg overflow-x-auto">
+                    <div className="inline-flex items-center bg-zazmic-gray-100 p-1.5 rounded-lg overflow-x-auto" style={{ gap: '8px' }}>
                         <button
-                            className={`px-4 py-1.5 rounded-md text-[12px] font-medium transition-all whitespace-nowrap ${statusFilter === '' ? 'bg-white shadow-sm text-zazmic-black' : 'text-zazmic-gray-500 hover:text-zazmic-black'}`}
+                            className={`px-5 py-1.5 rounded-md text-[12px] font-medium transition-all whitespace-nowrap ${statusFilter === '' ? 'bg-white shadow-sm text-zazmic-black' : 'text-zazmic-gray-500 hover:text-zazmic-black'}`}
                             onClick={() => setStatusFilter('')}
                         >All</button>
                         {['New', 'Contacted', 'Qualified', 'Converted', 'Dead'].map(status => (
                             <button
                                 key={status}
-                                className={`px-4 py-1.5 rounded-md text-[12px] font-medium transition-all whitespace-nowrap ${statusFilter === status ? 'bg-white shadow-sm text-zazmic-black' : 'text-zazmic-gray-500 hover:text-zazmic-black'}`}
+                                className={`px-5 py-1.5 rounded-md text-[12px] font-medium transition-all whitespace-nowrap ${statusFilter === status ? 'bg-white shadow-sm text-zazmic-black' : 'text-zazmic-gray-500 hover:text-zazmic-black'}`}
                                 onClick={() => setStatusFilter(status)}
                             >{status}</button>
                         ))}
@@ -122,7 +122,7 @@ export default function LeadsPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" style={{ marginBottom: '24px' }}>
                 <StatCard label="Total Leads" value={stats.total} change="↑ 12% this month" />
                 <StatCard label="Contacted" value={stats.contacted} change={`${stats.total ? Math.round(stats.contacted / stats.total * 100) : 0}% of total`} />
                 <StatCard label="Qualified" value={stats.qualified} change="↑ On track" />
