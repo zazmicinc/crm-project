@@ -2,10 +2,20 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Enum, Boolean, JSON
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Enum, Boolean, JSON, Table
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+
+
+# Association table for deal ↔ contact (many-to-many)
+deal_contacts = Table(
+    "deal_contacts",
+    Base.metadata,
+    Column("deal_id", Integer, ForeignKey("deals.id"), primary_key=True),
+    Column("contact_id", Integer, ForeignKey("contacts.id"), primary_key=True),
+    Column("role", String(100), nullable=True),
+)
 
 
 class Role(Base):
@@ -138,6 +148,10 @@ class Deal(Base):
     pipeline_id = Column(Integer, ForeignKey("pipelines.id"), nullable=True)
     stage_id = Column(Integer, ForeignKey("stages.id"), nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    close_date = Column(DateTime, nullable=True)
+    probability_override = Column(Integer, nullable=True)
+    loss_reason = Column(String(255), nullable=True)
+    loss_reason_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -152,6 +166,16 @@ class Deal(Base):
     stage_rel = relationship("Stage", back_populates="deals", foreign_keys=[stage_id])
     stage_history = relationship("StageChange", back_populates="deal", cascade="all, delete-orphan")
     activities = relationship("Activity", back_populates="deal", cascade="all, delete-orphan")
+    related_contacts = relationship("Contact", secondary="deal_contacts", lazy="select")
+    line_items = relationship("DealLineItem", back_populates="deal", cascade="all, delete-orphan")
+
+    @property
+    def effective_probability(self):
+        if self.probability_override is not None:
+            return self.probability_override
+        if self.stage_rel is not None:
+            return self.stage_rel.probability
+        return None
 
     @property
     def account_name(self):
@@ -293,6 +317,54 @@ class StageChange(Base):
     @property
     def to_stage_name(self):
         return self.to_stage.name if self.to_stage else None
+
+
+class Product(Base):
+    """A product or service that can be added to deals."""
+
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    unit_price = Column(Float, nullable=False, default=0.0)
+    currency = Column(String(10), nullable=False, default="USD")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    line_items = relationship("DealLineItem", back_populates="product")
+
+
+class DealLineItem(Base):
+    """A line item linking a product to a deal."""
+
+    __tablename__ = "deal_line_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    deal_id = Column(Integer, ForeignKey("deals.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Float, nullable=False, default=1.0)
+    unit_price_override = Column(Float, nullable=True)
+    discount_pct = Column(Float, nullable=False, default=0.0)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    deal = relationship("Deal", back_populates="line_items")
+    product = relationship("Product", back_populates="line_items")
+
+    @property
+    def subtotal(self):
+        price = self.unit_price_override if self.unit_price_override is not None else self.product.unit_price
+        return price * self.quantity * (1 - self.discount_pct / 100)
 
 
 class Note(Base):

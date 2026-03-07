@@ -72,48 +72,126 @@ export default function KanbanBoardPage() {
         }
     };
 
-    if (loading) return <div className="text-center py-20 text-slate-400">Loading pipeline…</div>;
+    const STAGE_COLORS = ['#3B82F6', '#8B5CF6', '#F59E0B', '#E63946', '#10B981', '#6B7280'];
+    const STAGE_BG    = ['#EFF6FF', '#F5F3FF', '#FFFBEB', '#FFF0F1', '#ECFDF5', '#F9FAFB'];
+
+    const stageColor = (i) => STAGE_COLORS[i % STAGE_COLORS.length];
+    const stageBg    = (i) => STAGE_BG[i % STAGE_BG.length];
+
+    const formatCurrency = (v) =>
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v ?? 0);
+
+    const stageTotal = (stageId) =>
+        getDealsByStage(stageId).reduce((s, d) => s + (d.value ?? 0), 0);
+
+    if (loading) return (
+        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--zazmic-gray-500)', fontSize: 14 }}>
+            Loading pipeline…
+        </div>
+    );
+
     if (!pipeline) return (
-        <div className="text-center py-20 text-slate-400">
-            <p className="mb-4">No pipeline configured.</p>
-            <Link to="/settings/pipelines" className="btn-primary inline-block">
-                Create Pipeline
-            </Link>
+        <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <p style={{ marginBottom: 16, color: 'var(--zazmic-gray-500)', fontSize: 14 }}>No pipeline configured.</p>
+            <Link to="/settings/pipelines" className="btn-primary">Create Pipeline</Link>
         </div>
     );
 
     return (
-        <div className="animate-fade-in h-full flex flex-col">
-            <div className="flex items-center justify-between mb-6 px-1">
-                <h1 className="text-2xl font-bold">{pipeline.name}</h1>
-                <Link to="/settings/pipelines" className="text-sm text-slate-400 hover:text-white transition-colors">
-                    ⚙️ Configure Pipeline
+        <div style={{ fontFamily: 'var(--font-primary)', color: 'var(--zazmic-black)', height: '100%', display: 'flex', flexDirection: 'column' }}>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                <div>
+                    <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 4 }}>
+                        {pipeline.name}
+                    </h1>
+                    <p style={{ fontSize: 13, color: 'var(--zazmic-gray-500)' }}>
+                        <strong style={{ color: 'var(--zazmic-black)' }}>{deals.length}</strong> deals &nbsp;·&nbsp;
+                        <strong style={{ color: 'var(--zazmic-black)' }}>
+                            {formatCurrency(deals.reduce((s, d) => s + (d.value ?? 0), 0))}
+                        </strong> total pipeline value
+                    </p>
+                </div>
+                <Link
+                    to="/settings/pipelines"
+                    style={{ fontSize: 13, color: 'var(--zazmic-gray-500)', display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--zazmic-red)'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--zazmic-gray-500)'}
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Configure Pipeline
                 </Link>
             </div>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
+            {/* Kanban Board */}
+            <div style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden', paddingBottom: 8 }}>
                 <DragDropContext onDragEnd={onDragEnd}>
-                    <div className="flex h-full gap-4 min-w-max">
-                        {stages.map(stage => (
-                            <div key={stage.id} className="w-80 flex-shrink-0 flex flex-col glass-card bg-slate-900/40 border-slate-800/50">
+                    <div style={{ display: 'flex', gap: 16, height: '100%', alignItems: 'flex-start' }}>
+                        {stages.map((stage, i) => (
+                            <div
+                                key={stage.id}
+                                style={{
+                                    width: 272,
+                                    minWidth: 272,
+                                    flexShrink: 0,
+                                    background: stageBg(i),
+                                    border: '1px solid var(--zazmic-gray-300)',
+                                    borderRadius: 12,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    maxHeight: 'calc(100vh - 260px)',
+                                    minHeight: 160,
+                                    overflow: 'hidden',
+                                }}
+                            >
                                 {/* Column Header */}
-                                <div className="p-4 border-b border-slate-700/50 flex justify-between items-center bg-white/5">
-                                    <h3 className="font-semibold text-slate-200">{stage.name}</h3>
-                                    <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">
-                                        {getDealsByStage(stage.id).length}
+                                <div style={{
+                                    padding: '13px 16px 11px',
+                                    borderBottom: '1px solid var(--zazmic-gray-300)',
+                                    background: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: stageColor(i), flexShrink: 0 }} />
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--zazmic-black)' }}>{stage.name}</span>
+                                        <span style={{
+                                            fontSize: 11, fontWeight: 700, color: stageColor(i),
+                                            background: stageBg(i), border: `1px solid ${stageColor(i)}33`,
+                                            borderRadius: 99, padding: '1px 7px',
+                                        }}>
+                                            {getDealsByStage(stage.id).length}
+                                        </span>
+                                    </div>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--zazmic-gray-500)' }}>
+                                        {formatCurrency(stageTotal(stage.id))}
                                     </span>
                                 </div>
 
-                                {/* Droppable Area */}
+                                {/* Droppable */}
                                 <Droppable droppableId={String(stage.id)}>
                                     {(provided, snapshot) => (
                                         <div
                                             {...provided.droppableProps}
                                             ref={provided.innerRef}
-                                            className={`flex-1 p-3 overflow-y-auto space-y-3 transition-colors ${
-                                                snapshot.isDraggingOver ? 'bg-indigo-500/5' : ''
-                                            }`}
+                                            style={{
+                                                flex: 1,
+                                                overflowY: 'auto',
+                                                padding: '10px 10px 12px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 8,
+                                                background: snapshot.isDraggingOver ? `${stageColor(i)}0D` : 'transparent',
+                                                transition: 'background 0.15s',
+                                            }}
                                         >
+                                            {getDealsByStage(stage.id).length === 0 && (
+                                                <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 13, color: 'var(--zazmic-gray-500)' }}>
+                                                    No deals
+                                                </div>
+                                            )}
                                             {getDealsByStage(stage.id).map((deal, index) => (
                                                 <Draggable key={deal.id} draggableId={String(deal.id)} index={index}>
                                                     {(provided, snapshot) => (
@@ -121,22 +199,48 @@ export default function KanbanBoardPage() {
                                                             ref={provided.innerRef}
                                                             {...provided.draggableProps}
                                                             {...provided.dragHandleProps}
-                                                            style={{ ...provided.draggableProps.style }}
-                                                            className={`p-4 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-500 transition-all shadow-sm group ${
-                                                                snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500 rotate-2' : ''
-                                                            }`}
+                                                            style={{
+                                                                ...provided.draggableProps.style,
+                                                                background: 'white',
+                                                                border: snapshot.isDragging
+                                                                    ? `1px solid ${stageColor(i)}`
+                                                                    : '1px solid var(--zazmic-gray-300)',
+                                                                borderRadius: 8,
+                                                                padding: '12px 14px',
+                                                                boxShadow: snapshot.isDragging
+                                                                    ? `0 8px 24px rgba(0,0,0,0.12)`
+                                                                    : 'none',
+                                                                transform: snapshot.isDragging
+                                                                    ? `${provided.draggableProps.style?.transform} rotate(1.5deg)`
+                                                                    : provided.draggableProps.style?.transform,
+                                                                cursor: 'grab',
+                                                            }}
                                                         >
-                                                            <Link to={`/deals/${deal.id}`} className="block group-hover:text-indigo-300 transition-colors font-medium mb-2">
+                                                            <Link
+                                                                to={`/deals/${deal.id}`}
+                                                                style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--zazmic-black)', textDecoration: 'none', marginBottom: 8, lineHeight: 1.35 }}
+                                                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--zazmic-red)'}
+                                                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--zazmic-black)'}
+                                                            >
                                                                 {deal.title}
                                                             </Link>
-                                                            <div className="flex justify-between items-end text-sm">
-                                                                <div className="text-emerald-400 font-mono">
-                                                                    ${deal.value?.toLocaleString()}
-                                                                </div>
-                                                                <div className="text-slate-500 text-xs">
-                                                                    {deal.contact_name || `ID #${deal.contact_id}`}
-                                                                </div>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--zazmic-black)', letterSpacing: '-0.02em' }}>
+                                                                    {formatCurrency(deal.value)}
+                                                                </span>
+                                                                <span style={{ fontSize: 12, color: 'var(--zazmic-gray-500)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                    {deal.contact_name || `#${deal.contact_id}`}
+                                                                </span>
                                                             </div>
+                                                            {deal.close_date && (() => {
+                                                                const days = Math.ceil((new Date(deal.close_date) - new Date()) / 86400000);
+                                                                const color = days < 0 ? '#E63946' : days <= 7 ? '#F59E0B' : 'var(--zazmic-gray-500)';
+                                                                return (
+                                                                    <p style={{ fontSize: 11, color, marginTop: 6, fontWeight: 500 }}>
+                                                                        {days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Due today' : `${days}d left`}
+                                                                    </p>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     )}
                                                 </Draggable>

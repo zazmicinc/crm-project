@@ -87,35 +87,30 @@ export default function ContactsPage() {
         <div className="animate-fade-in pb-12">
 
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-[40px] font-bold text-zazmic-black tracking-tight mb-2">Contacts</h1>
-                    <p className="text-[17px] text-zazmic-gray-500">
+                    <h1 className="text-[28px] font-bold text-zazmic-black tracking-tight mb-1">Contacts</h1>
+                    <p className="text-[13px] text-zazmic-gray-500">
                         <span className="font-semibold text-zazmic-black">{contacts.length}</span> people in your network
                     </p>
                 </div>
-                {hasPermission('contacts.create') && (
-                    <button
-                        className="btn-primary"
-                        onClick={() => setShowForm(true)}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        New Contact
-                    </button>
-                )}
-            </div>
-
-            {/* Toolbar */}
-            <div className="bg-white rounded-[24px] shadow-sm p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="relative w-full md:w-80">
-                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zazmic-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                    <input
-                        className="w-full bg-zazmic-gray-100 rounded-full pl-11 pr-4 py-3 text-[15px] focus:outline-none focus:border-zazmic-red border border-transparent transition-all placeholder:text-zazmic-gray-500"
-                        type="text"
-                        placeholder="Search contacts..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zazmic-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                        <input
+                            className="bg-zazmic-gray-100 rounded-lg pl-9 pr-4 py-2 text-[14px] w-60 focus:outline-none focus:ring-1 focus:ring-zazmic-red border border-transparent focus:border-zazmic-red transition-all placeholder:text-zazmic-gray-500"
+                            type="text"
+                            placeholder="Search contacts..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+                    {hasPermission('contacts.create') && (
+                        <button className="btn-primary" onClick={() => setShowForm(true)}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            New Contact
+                        </button>
+                    )}
                 </div>
             </div>
 
