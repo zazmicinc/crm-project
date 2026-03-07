@@ -99,7 +99,7 @@ export default function LeadsPage() {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
-                    <div className="flex bg-zazmic-gray-100 p-1 rounded-lg overflow-x-auto">
+                    <div className="flex gap-1 bg-zazmic-gray-100 p-1 rounded-lg overflow-x-auto">
                         <button
                             className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all whitespace-nowrap ${statusFilter === '' ? 'bg-white shadow-sm text-zazmic-black' : 'text-zazmic-gray-500 hover:text-zazmic-black'}`}
                             onClick={() => setStatusFilter('')}
