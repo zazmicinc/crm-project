@@ -1,0 +1,52 @@
+#!/bin/sh
+# Pre-push hook: runs Playwright E2E tests before pushing to remote
+# Installed at: .git/hooks/pre-push
+
+echo ""
+echo "🎭 Running Playwright login tests before push..."
+echo "──────────────────────────────────────────────"
+
+# Navigate to frontend directory
+FRONTEND_DIR="$(git rev-parse --show-toplevel)/crm-frontend"
+
+if [ ! -d "$FRONTEND_DIR" ]; then
+  echo "⚠️  crm-frontend directory not found, skipping tests"
+  exit 0
+fi
+
+cd "$FRONTEND_DIR"
+
+# Check if Playwright is installed
+if ! npx playwright --version > /dev/null 2>&1; then
+  echo "⚠️  Playwright not installed. Run: npm install -D @playwright/test && npx playwright install chromium"
+  echo "   Skipping tests..."
+  exit 0
+fi
+
+# Check if dev server is already running
+DEV_SERVER_RUNNING=false
+if curl -s http://localhost:5173 > /dev/null 2>&1; then
+  DEV_SERVER_RUNNING=true
+  echo "✅ Dev server already running on :5173"
+fi
+
+# Run the tests
+npx playwright test --reporter=list
+
+TEST_EXIT_CODE=$?
+
+if [ $TEST_EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "❌ Playwright tests FAILED — push aborted"
+  echo "   Fix the failing tests before pushing."
+  echo ""
+  echo "   To see the full report: npx playwright show-report"
+  echo "   To skip tests (not recommended): git push --no-verify"
+  echo ""
+  exit 1
+fi
+
+echo ""
+echo "✅ All Playwright tests passed — push proceeding"
+echo ""
+exit 0
