@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dealsApi } from '../api';
 import DealForm from '../components/DealForm';
+import { ListTable } from '../components/shared/ListTable';
+import { StatusBadge } from '../components/shared/StatusBadge';
+import { formatDate } from '../utils/formatDate';
 
 const PIPELINE_STAGES = [
     { key: 'prospecting',   label: 'Prospecting',   color: '#3B82F6', bg: '#EFF6FF' },
@@ -12,11 +15,75 @@ const PIPELINE_STAGES = [
     { key: 'closed_lost',   label: 'Closed Lost',   color: '#6B7280', bg: '#F9FAFB' },
 ];
 
+const formatCurrency = (v) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v || 0);
+
+const listColumns = [
+    {
+        key: 'name', label: 'Deal Name', width: '1fr',
+        render: (d) => (
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#0a0a0a', letterSpacing: '-0.01em' }}>
+                {d.title}
+            </span>
+        )
+    },
+    {
+        key: 'account', label: 'Account / Contact', width: '1fr',
+        render: (d) => (
+            <span style={{ fontSize: 13, color: '#444', fontWeight: 500 }}>
+                {d.account_name || d.contact_name || '—'}
+            </span>
+        )
+    },
+    {
+        key: 'value', label: 'Value', width: '110px',
+        render: (d) => (
+            <span style={{ fontSize: 13, color: '#0a0a0a', fontWeight: 600 }}>
+                {formatCurrency(d.value)}
+            </span>
+        )
+    },
+    {
+        key: 'stage', label: 'Stage', width: '150px',
+        render: (d) => {
+            const stage = PIPELINE_STAGES.find(s => s.key === d.stage);
+            return (
+                <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    background: stage?.bg || '#f5f5f5',
+                    color: stage?.color || '#555',
+                    padding: '4px 10px', borderRadius: 20,
+                    fontSize: 12, fontWeight: 600, letterSpacing: '0.01em',
+                    whiteSpace: 'nowrap'
+                }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: stage?.color || '#999', flexShrink: 0 }} />
+                    {stage?.label || d.stage}
+                </span>
+            );
+        }
+    },
+    {
+        key: 'close_date', label: 'Close Date', width: '120px',
+        render: (d) => <span style={{ fontSize: 13, color: '#888' }}>{formatDate(d.close_date)}</span>
+    },
+    {
+        key: 'owner', label: 'Owner', width: '130px',
+        render: (d) => <span style={{ fontSize: 13, color: '#666' }}>{d.owner_name || '—'}</span>
+    },
+    {
+        key: 'created', label: 'Created', width: '120px',
+        render: (d) => <span style={{ fontSize: 13, color: '#aaa' }}>{formatDate(d.created_at)}</span>
+    },
+];
+
 export default function DealsPage() {
     const [deals, setDeals] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editingDeal, setEditingDeal] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [view, setView] = useState('list');
+    const [page, setPage] = useState(1);
+    const pageSize = 10;
     const navigate = useNavigate();
 
     const fetchDeals = useCallback(async () => {
@@ -52,17 +119,16 @@ export default function DealsPage() {
     };
 
     const handleStageChange = async (deal, newStageKey) => {
-        const payload = { stage: newStageKey };
         if (newStageKey === 'closed_lost' && !deal.loss_reason) {
             setEditingDeal({ ...deal, _pendingStage: newStageKey });
             return;
         }
-        await dealsApi.update(deal.id, payload);
+        await dealsApi.update(deal.id, { stage: newStageKey });
         fetchDeals();
     };
 
-    const formatCurrency = (v) =>
-        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+    if (showForm) return <DealForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />;
+    if (editingDeal) return <DealForm deal={editingDeal} onSubmit={handleUpdate} onCancel={() => setEditingDeal(null)} />;
 
     const groupedDeals = PIPELINE_STAGES.map((stage) => ({
         ...stage,
@@ -78,135 +144,174 @@ export default function DealsPage() {
         .filter((d) => d.stage === 'closed_won')
         .reduce((s, d) => s + d.value, 0);
 
-    if (showForm) return <DealForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />;
-    if (editingDeal) return <DealForm deal={editingDeal} onSubmit={handleUpdate} onCancel={() => setEditingDeal(null)} />;
+    const paginatedDeals = deals.slice((page - 1) * pageSize, page * pageSize);
+    const totalPages = Math.ceil(deals.length / pageSize);
+
+    const viewToggle = (
+        <div style={{ display: 'flex', gap: 4, background: '#fafafa', border: '1px solid #e8e8e8', borderRadius: 8, padding: 4 }}>
+            <button
+                onClick={() => setView('list')}
+                title="List view"
+                style={{
+                    width: 30, height: 30, borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: view === 'list' ? '#fff' : 'transparent',
+                    color: view === 'list' ? '#0a0a0a' : '#aaa',
+                    boxShadow: view === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+            >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            </button>
+            <button
+                onClick={() => setView('kanban')}
+                title="Kanban view"
+                style={{
+                    width: 30, height: 30, borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: view === 'kanban' ? '#fff' : 'transparent',
+                    color: view === 'kanban' ? '#0a0a0a' : '#aaa',
+                    boxShadow: view === 'kanban' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+            >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="5" height="18" rx="1" /><rect x="10" y="3" width="5" height="12" rx="1" /><rect x="17" y="3" width="4" height="15" rx="1" /></svg>
+            </button>
+        </div>
+    );
 
     return (
         <div style={{ fontFamily: 'var(--font-primary)', color: 'var(--zazmic-black)' }} className="pb-12">
-
-            {/* ── Page Header ── */}
-            <div className="flex items-end justify-between mb-6">
-                <div>
-                    <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 4 }}>
-                        Deals Pipeline
-                    </h1>
-                    <p style={{ fontSize: 13.5, color: 'var(--zazmic-gray-500)' }}>
-                        <strong style={{ color: 'var(--zazmic-black)' }}>{deals.length}</strong> deals &nbsp;·&nbsp;
-                        <strong style={{ color: 'var(--zazmic-black)' }}>{formatCurrency(totalPipelineValue)}</strong> in pipeline &nbsp;·&nbsp;
-                        <strong style={{ color: '#10B981' }}>{formatCurrency(wonValue)}</strong> won
-                    </p>
-                </div>
-                <button className="btn-primary" onClick={() => setShowForm(true)}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
-                    New Deal
-                </button>
-            </div>
-
-            {/* ── Summary Strip ── */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-                {groupedDeals.map((stage) => (
-                    <div
-                        key={stage.key}
-                        style={{
-                            flex: '1 1 130px',
-                            background: 'white',
-                            border: `1px solid var(--zazmic-gray-300)`,
-                            borderTop: `3px solid ${stage.color}`,
-                            borderRadius: 8,
-                            padding: '12px 16px',
-                        }}
-                    >
-                        <p style={{ fontSize: 11, fontWeight: 600, color: stage.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-                            {stage.label}
-                        </p>
-                        <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--zazmic-black)', letterSpacing: '-0.03em' }}>
-                            {stage.deals.length}
-                        </p>
-                        <p style={{ fontSize: 12, color: 'var(--zazmic-gray-500)', marginTop: 2 }}>
-                            {formatCurrency(stage.total)}
-                        </p>
-                    </div>
-                ))}
-            </div>
-
-            {/* ── Kanban Board ── */}
             {loading ? (
-                <div style={{ background: 'white', borderRadius: 12, padding: '64px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, border: '1px solid var(--zazmic-gray-300)' }}>
-                    <div style={{ width: 28, height: 28, border: '2px solid var(--zazmic-red)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                    <p style={{ fontSize: 14, color: 'var(--zazmic-gray-500)' }}>Loading pipeline…</p>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, gap: 12 }}>
+                    <div style={{ width: 28, height: 28, border: '2px solid #e8192c', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                    <p style={{ fontSize: 14, color: '#aaa' }}>Loading deals...</p>
                 </div>
+            ) : view === 'list' ? (
+                <ListTable
+                    title="All Deals"
+                    breadcrumb="CRM / Deals"
+                    columns={listColumns}
+                    rows={paginatedDeals}
+                    newButtonLabel="+ New Deal"
+                    onNew={() => setShowForm(true)}
+                    onRowClick={(d) => navigate(`/deals/${d.id}`)}
+                    totalCount={deals.length}
+                    currentPage={page}
+                    totalPages={totalPages || 1}
+                    onPageChange={setPage}
+                    headerExtra={viewToggle}
+                />
             ) : (
-                <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 12, alignItems: 'flex-start' }}>
-                    {groupedDeals.map((stage) => (
-                        <div
-                            key={stage.key}
-                            style={{
-                                width: 280,
-                                minWidth: 280,
-                                flexShrink: 0,
-                                background: stage.bg,
-                                border: '1px solid var(--zazmic-gray-300)',
-                                borderRadius: 12,
-                                overflow: 'hidden',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                maxHeight: 'calc(100vh - 320px)',
-                                minHeight: 200,
-                            }}
-                        >
-                            {/* Column Header */}
-                            <div style={{
-                                padding: '14px 16px 12px',
-                                borderBottom: '1px solid var(--zazmic-gray-300)',
-                                background: 'white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: stage.color, flexShrink: 0 }} />
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--zazmic-black)' }}>{stage.label}</span>
-                                    <span style={{
-                                        fontSize: 11, fontWeight: 700, color: stage.color,
-                                        background: stage.bg, border: `1px solid ${stage.color}33`,
-                                        borderRadius: 99, padding: '1px 7px',
-                                    }}>
-                                        {stage.deals.length}
+                <div>
+                    {/* Kanban Header */}
+                    <div className="flex items-end justify-between mb-6">
+                        <div>
+                            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', color: '#999', textTransform: 'uppercase', marginBottom: 6 }}>CRM / Deals</div>
+                            <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4, color: '#0a0a0a' }}>
+                                Deals Pipeline
+                            </h1>
+                            <p style={{ fontSize: 13.5, color: 'var(--zazmic-gray-500)' }}>
+                                <strong style={{ color: 'var(--zazmic-black)' }}>{deals.length}</strong> deals &nbsp;·&nbsp;
+                                <strong style={{ color: 'var(--zazmic-black)' }}>{formatCurrency(totalPipelineValue)}</strong> in pipeline &nbsp;·&nbsp;
+                                <strong style={{ color: '#10B981' }}>{formatCurrency(wonValue)}</strong> won
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {viewToggle}
+                            <button className="btn-primary" onClick={() => setShowForm(true)}>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                New Deal
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Summary Strip */}
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
+                        {groupedDeals.map((stage) => (
+                            <div
+                                key={stage.key}
+                                style={{
+                                    flex: '1 1 130px',
+                                    background: 'white',
+                                    border: `1px solid var(--zazmic-gray-300)`,
+                                    borderTop: `3px solid ${stage.color}`,
+                                    borderRadius: 8,
+                                    padding: '12px 16px',
+                                }}
+                            >
+                                <p style={{ fontSize: 11, fontWeight: 600, color: stage.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+                                    {stage.label}
+                                </p>
+                                <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--zazmic-black)', letterSpacing: '-0.03em' }}>
+                                    {stage.deals.length}
+                                </p>
+                                <p style={{ fontSize: 12, color: 'var(--zazmic-gray-500)', marginTop: 2 }}>
+                                    {formatCurrency(stage.total)}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Kanban Board */}
+                    <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 12, alignItems: 'flex-start' }}>
+                        {groupedDeals.map((stage) => (
+                            <div
+                                key={stage.key}
+                                style={{
+                                    width: 280, minWidth: 280, flexShrink: 0,
+                                    background: stage.bg,
+                                    border: '1px solid var(--zazmic-gray-300)',
+                                    borderRadius: 12, overflow: 'hidden',
+                                    display: 'flex', flexDirection: 'column',
+                                    maxHeight: 'calc(100vh - 320px)', minHeight: 200,
+                                }}
+                            >
+                                <div style={{
+                                    padding: '14px 16px 12px', borderBottom: '1px solid var(--zazmic-gray-300)',
+                                    background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: stage.color, flexShrink: 0 }} />
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--zazmic-black)' }}>{stage.label}</span>
+                                        <span style={{
+                                            fontSize: 11, fontWeight: 700, color: stage.color,
+                                            background: stage.bg, border: `1px solid ${stage.color}33`,
+                                            borderRadius: 99, padding: '1px 7px',
+                                        }}>
+                                            {stage.deals.length}
+                                        </span>
+                                    </div>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--zazmic-gray-500)' }}>
+                                        {formatCurrency(stage.total)}
                                     </span>
                                 </div>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--zazmic-gray-500)' }}>
-                                    {formatCurrency(stage.total)}
-                                </span>
+                                <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 12px' }}>
+                                    {stage.deals.length === 0 ? (
+                                        <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 13, color: 'var(--zazmic-gray-500)' }}>
+                                            No deals
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            {stage.deals.map((deal) => (
+                                                <DealCard
+                                                    key={deal.id}
+                                                    deal={deal}
+                                                    stage={stage}
+                                                    allStages={PIPELINE_STAGES}
+                                                    formatCurrency={formatCurrency}
+                                                    onEdit={() => setEditingDeal(deal)}
+                                                    onDelete={() => handleDelete(deal.id)}
+                                                    onMove={(s) => handleStageChange(deal, s)}
+                                                    onClick={() => navigate(`/deals/${deal.id}`)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-
-                            {/* Cards */}
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 12px' }}>
-                                {stage.deals.length === 0 ? (
-                                    <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 13, color: 'var(--zazmic-gray-500)' }}>
-                                        No deals
-                                    </div>
-                                ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                        {stage.deals.map((deal) => (
-                                            <DealCard
-                                                key={deal.id}
-                                                deal={deal}
-                                                stage={stage}
-                                                allStages={PIPELINE_STAGES}
-                                                formatCurrency={formatCurrency}
-                                                onEdit={() => setEditingDeal(deal)}
-                                                onDelete={() => handleDelete(deal.id)}
-                                                onMove={(s) => handleStageChange(deal, s)}
-                                                onClick={() => navigate(`/deals/${deal.id}`)}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
@@ -229,13 +334,9 @@ function DealCard({ deal, stage, allStages, formatCurrency, onEdit, onDelete, on
         <div
             onClick={onClick}
             style={{
-                background: 'white',
-                border: '1px solid var(--zazmic-gray-300)',
-                borderRadius: 8,
-                padding: '12px 14px',
-                cursor: 'pointer',
-                position: 'relative',
-                transition: 'box-shadow 0.15s, border-color 0.15s',
+                background: 'white', border: '1px solid var(--zazmic-gray-300)',
+                borderRadius: 8, padding: '12px 14px', cursor: 'pointer',
+                position: 'relative', transition: 'box-shadow 0.15s, border-color 0.15s',
             }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
@@ -247,15 +348,13 @@ function DealCard({ deal, stage, allStages, formatCurrency, onEdit, onDelete, on
                 setShowMoveMenu(false);
             }}
         >
-            {/* Title row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--zazmic-black)', lineHeight: 1.35, flex: 1, paddingRight: 8 }}>
                     {deal.title}
                 </p>
                 <div style={{ display: 'flex', gap: 2, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                     <button
-                        title="Edit"
-                        onClick={onEdit}
+                        title="Edit" onClick={onEdit}
                         style={{ width: 24, height: 24, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--zazmic-gray-500)', borderRadius: 4, display: 'grid', placeItems: 'center' }}
                         onMouseEnter={(e) => e.currentTarget.style.color = 'var(--zazmic-red)'}
                         onMouseLeave={(e) => e.currentTarget.style.color = 'var(--zazmic-gray-500)'}
@@ -263,8 +362,7 @@ function DealCard({ deal, stage, allStages, formatCurrency, onEdit, onDelete, on
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
                     </button>
                     <button
-                        title="Delete"
-                        onClick={onDelete}
+                        title="Delete" onClick={onDelete}
                         style={{ width: 24, height: 24, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--zazmic-gray-500)', borderRadius: 4, display: 'grid', placeItems: 'center' }}
                         onMouseEnter={(e) => e.currentTarget.style.color = '#E63946'}
                         onMouseLeave={(e) => e.currentTarget.style.color = 'var(--zazmic-gray-500)'}
@@ -273,13 +371,9 @@ function DealCard({ deal, stage, allStages, formatCurrency, onEdit, onDelete, on
                     </button>
                 </div>
             </div>
-
-            {/* Value */}
             <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--zazmic-black)', letterSpacing: '-0.02em', marginBottom: 8 }}>
                 {formatCurrency(deal.value)}
             </p>
-
-            {/* Meta row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--zazmic-gray-500)' }}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
                     {deal.contact_name || deal.account_name || '—'}
@@ -293,15 +387,11 @@ function DealCard({ deal, stage, allStages, formatCurrency, onEdit, onDelete, on
                     <span style={{ color: stage.color, fontWeight: 600, fontSize: 11 }}>{deal.effective_probability}%</span>
                 )}
             </div>
-
-            {/* Loss reason */}
             {deal.stage === 'closed_lost' && deal.loss_reason && (
                 <p style={{ fontSize: 11, color: '#E63946', marginTop: 6, borderTop: '1px solid #fee2e2', paddingTop: 6 }}>
                     {deal.loss_reason}
                 </p>
             )}
-
-            {/* Move to stage */}
             <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 10, borderTop: '1px solid var(--zazmic-gray-100)', paddingTop: 8 }}>
                 <button
                     onClick={() => setShowMoveMenu((v) => !v)}
@@ -318,8 +408,8 @@ function DealCard({ deal, stage, allStages, formatCurrency, onEdit, onDelete, on
                                 onClick={() => { onMove(s.key); setShowMoveMenu(false); }}
                                 style={{
                                     fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
-                                    border: `1px solid ${s.color}44`, background: s.bg, color: s.color, fontWeight: 500,
-                                    transition: 'opacity 0.15s',
+                                    border: `1px solid ${s.color}44`, background: s.bg, color: s.color,
+                                    fontWeight: 500, transition: 'opacity 0.15s',
                                 }}
                             >
                                 {s.label}

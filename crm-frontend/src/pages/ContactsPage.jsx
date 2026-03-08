@@ -1,32 +1,51 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { contactsApi } from '../api';
 import ContactForm from '../components/ContactForm';
 import { useAuth } from '../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ListTable } from '../components/shared/ListTable';
+import { StatusBadge } from '../components/shared/StatusBadge';
+import { formatDate } from '../utils/formatDate';
 
-// Avatar gradient generator
-const getAvatarGradient = (name) => {
-    const gradients = [
-        'linear-gradient(135deg, #E63946, #D62828)', // blue
-        'linear-gradient(135deg, #FF9F0A, #FF3B30)', // orange-red
-        'linear-gradient(135deg, #30D158, #D62828)', // green-blue
-        'linear-gradient(135deg, #5E5CE6, #FF2D55)', // purple-pink
-    ];
-    if (!name) return gradients[0];
-    const index = name.charCodeAt(0) % gradients.length;
-    return gradients[index];
-};
+const columns = [
+    {
+        key: 'name', label: 'Name', width: '1fr',
+        render: (c) => (
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#0a0a0a', letterSpacing: '-0.01em' }}>
+                {c.name}
+            </span>
+        )
+    },
+    {
+        key: 'email', label: 'Email', width: '1fr',
+        render: (c) => <span style={{ fontSize: 13, color: '#666' }}>{c.email}</span>
+    },
+    {
+        key: 'phone', label: 'Phone', width: '140px',
+        render: (c) => <span style={{ fontSize: 13, color: '#888' }}>{c.phone || '—'}</span>
+    },
+    {
+        key: 'company', label: 'Company', width: '1fr',
+        render: (c) => <span style={{ fontSize: 13, color: '#444', fontWeight: 500 }}>{c.company || '—'}</span>
+    },
+    {
+        key: 'status', label: 'Status', width: '130px',
+        render: (c) => c.status ? <StatusBadge status={c.status} /> : <span style={{ fontSize: 13, color: '#aaa' }}>—</span>
+    },
+    {
+        key: 'created', label: 'Created', width: '120px',
+        render: (c) => <span style={{ fontSize: 13, color: '#aaa' }}>{formatDate(c.created_at)}</span>
+    },
+];
 
 export default function ContactsPage() {
     const { hasPermission } = useAuth();
+    const navigate = useNavigate();
     const [contacts, setContacts] = useState([]);
     const [search, setSearch] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [editingContact, setEditingContact] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // Pagination state
     const [page, setPage] = useState(1);
     const pageSize = 10;
 
@@ -61,13 +80,8 @@ export default function ContactsPage() {
         fetchContacts();
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('Delete this contact and all associated deals/activities?')) return;
-        await contactsApi.delete(id);
-        fetchContacts();
-    };
-
     const paginatedContacts = contacts.slice((page - 1) * pageSize, page * pageSize);
+    const totalPages = Math.ceil(contacts.length / pageSize);
 
     if (showForm) {
         return <ContactForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />;
@@ -83,148 +97,41 @@ export default function ContactsPage() {
         );
     }
 
+    const headerExtra = (
+        <div style={{ position: 'relative' }}>
+            <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#aaa' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+            <input
+                style={{ background: '#fafafa', border: '1px solid #e8e8e8', borderRadius: 8, paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 13, width: 200, outline: 'none' }}
+                type="text"
+                placeholder="Search contacts..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+        </div>
+    );
+
     return (
         <div className="animate-fade-in pb-12">
-
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-[28px] font-bold text-zazmic-black tracking-tight mb-1">Contacts</h1>
-                    <p className="text-[13px] text-zazmic-gray-500">
-                        <span className="font-semibold text-zazmic-black">{contacts.length}</span> people in your network
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zazmic-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                        <input
-                            className="bg-zazmic-gray-100 rounded-lg pl-9 pr-4 py-2 text-[14px] w-60 focus:outline-none focus:ring-1 focus:ring-zazmic-red border border-transparent focus:border-zazmic-red transition-all placeholder:text-zazmic-gray-500"
-                            type="text"
-                            placeholder=""
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </div>
-                    {hasPermission('contacts.create') && (
-                        <button className="btn-primary" onClick={() => setShowForm(true)}>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            New Contact
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Content Area */}
             {loading ? (
-                <div className="bg-white rounded-[24px] shadow-sm p-16 flex flex-col items-center justify-center space-y-4">
-                    <div className="w-8 h-8 border-2 border-zazmic-red border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-zazmic-gray-500 text-[15px] font-medium">Loading contacts...</p>
-                </div>
-            ) : contacts.length === 0 ? (
-                <div className="bg-white rounded-[24px] shadow-sm p-16 text-center">
-                    <div className="w-16 h-16 bg-zazmic-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <span className="text-[32px] opacity-70">👥</span>
-                    </div>
-                    <h3 className="text-[20px] font-semibold text-zazmic-black mb-2">No contacts found</h3>
-                    <p className="text-zazmic-gray-500 max-w-sm mx-auto text-[15px] mb-8">
-                        {search
-                            ? 'No results match your search. Try adjusting your terms.'
-                            : 'Get started by adding your first contact.'}
-                    </p>
-                    {!search && hasPermission('contacts.create') && (
-                        <button className="btn-primary" onClick={() => setShowForm(true)}>
-                            Create Contact
-                        </button>
-                    )}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, gap: 12 }}>
+                    <div style={{ width: 28, height: 28, border: '2px solid #e8192c', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                    <p style={{ fontSize: 14, color: '#aaa' }}>Loading contacts...</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-[24px] shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100 w-12"><input type="checkbox" className="rounded text-zazmic-red focus:ring-zazmic-red w-4 h-4 cursor-pointer" /></th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Name</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Email</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Phone</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Company</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100">Created</th>
-                                    <th className="py-4 px-6 text-[12px] font-semibold text-zazmic-gray-500 uppercase tracking-wider border-b border-zazmic-gray-100 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedContacts.map((c) => (
-                                    <tr key={c.id} className="group hover:bg-zazmic-gray-100 transition-colors cursor-pointer border-b border-zazmic-gray-100 last:border-0">
-                                        <td className="py-4 px-6"><input type="checkbox" className="rounded text-zazmic-red focus:ring-zazmic-red w-4 h-4 cursor-pointer" /></td>
-                                        <td className="py-4 px-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-[14px] shrink-0" style={{ background: getAvatarGradient(c.name) }}>
-                                                    {c.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                                                </div>
-                                                <Link to={`/contacts/${c.id}`} className="font-medium text-[15px] text-zazmic-black hover:text-zazmic-red transition-colors">
-                                                    {c.name}
-                                                </Link>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 px-6 text-[15px] text-zazmic-gray-500">{c.email}</td>
-                                        <td className="py-4 px-6 text-[15px] text-zazmic-gray-500">{c.phone || '--'}</td>
-                                        <td className="py-4 px-6">
-                                            {c.company ? (
-                                                <span className="badge" style={{ background: '#F3F4F6', color: '#6B7280' }}>
-                                                    {c.company}
-                                                </span>
-                                            ) : (
-                                                <span className="text-zazmic-gray-500 italic text-[14px]">--</span>
-                                            )}
-                                        </td>
-                                        <td className="py-4 px-6 text-[15px] text-zazmic-gray-500">
-                                            {new Date(c.created_at).toLocaleDateString()}
-                                        </td>
-                                        <td className="py-4 px-6 text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {hasPermission('contacts.update') && (
-                                                    <button
-                                                        onClick={(e) => { e.preventDefault(); setEditingContact(c); }}
-                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-zazmic-gray-100 text-zazmic-gray-500 hover:bg-white hover:text-zazmic-black shadow-sm transition-all"
-                                                        title="Edit"
-                                                    >
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
-                                                    </button>
-                                                )}
-                                                <Link to={`/contacts/${c.id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-zazmic-gray-100 text-zazmic-gray-500 hover:bg-zazmic-red hover:text-white shadow-sm transition-all">
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                                                </Link>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    {/* Pagination */}
-                    <div className="px-6 py-4 border-t border-zazmic-gray-100 flex items-center justify-between text-[14px]">
-                        <div className="text-zazmic-gray-500 font-medium">
-                            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, contacts.length)} of {contacts.length} contacts
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                className="w-8 h-8 rounded-full flex items-center justify-center border border-zazmic-gray-300 text-zazmic-gray-500 hover:bg-zazmic-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                onClick={() => setPage(p => Math.max(1, p - 1))}
-                                disabled={page === 1}
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-                            </button>
-                            <button className="w-8 h-8 rounded-full flex items-center justify-center bg-zazmic-red text-white font-medium">{page}</button>
-                            <button
-                                className="w-8 h-8 rounded-full flex items-center justify-center border border-zazmic-gray-300 text-zazmic-gray-500 hover:bg-zazmic-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                onClick={() => setPage(p => (p * pageSize < contacts.length ? p + 1 : p))}
-                                disabled={page * pageSize >= contacts.length}
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ListTable
+                    title="All Contacts"
+                    breadcrumb="CRM / Contacts"
+                    columns={columns}
+                    rows={paginatedContacts}
+                    newButtonLabel="+ New Contact"
+                    onNew={hasPermission('contacts.create') ? () => setShowForm(true) : () => {}}
+                    onRowClick={(c) => navigate(`/contacts/${c.id}`)}
+                    totalCount={contacts.length}
+                    currentPage={page}
+                    totalPages={totalPages || 1}
+                    onPageChange={setPage}
+                    headerExtra={headerExtra}
+                />
             )}
         </div>
     );
