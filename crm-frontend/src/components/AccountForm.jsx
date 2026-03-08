@@ -8,6 +8,9 @@ export default function AccountForm({ account, onSubmit, onCancel }) {
         phone: account?.phone || '',
         email: account?.email || '',
         address: account?.address || '',
+        account_type: account?.account_type || 'Prospect',
+        annual_revenue: account?.annual_revenue ?? '',
+        employee_count: account?.employee_count ?? '',
     });
     const [error, setError] = useState('');
 
@@ -80,6 +83,40 @@ export default function AccountForm({ account, onSubmit, onCancel }) {
                             placeholder="contact@acme.com"
                             value={form.email}
                             onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Account Type</label>
+                        <select
+                            className="input-field"
+                            value={form.account_type}
+                            onChange={(e) => setForm({ ...form, account_type: e.target.value })}
+                        >
+                            <option value="Prospect">Prospect</option>
+                            <option value="Customer">Customer</option>
+                            <option value="Partner">Partner</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Annual Revenue ($)</label>
+                        <input
+                            className="input-field"
+                            type="number"
+                            min={0}
+                            placeholder="1000000"
+                            value={form.annual_revenue}
+                            onChange={(e) => setForm({ ...form, annual_revenue: e.target.value === '' ? '' : Number(e.target.value) })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[14px] font-medium text-zazmic-black mb-2">Employee Count</label>
+                        <input
+                            className="input-field"
+                            type="number"
+                            min={0}
+                            placeholder="50"
+                            value={form.employee_count}
+                            onChange={(e) => setForm({ ...form, employee_count: e.target.value === '' ? '' : Number(e.target.value) })}
                         />
                     </div>
                 </div>

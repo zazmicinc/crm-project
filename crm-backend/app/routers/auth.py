@@ -33,23 +33,13 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     # form_data.username is the email field
     user = db.query(User).filter(User.email == form_data.username).first()
     
-    # TEMPORARY BYPASS: Force successful login
-    if not user:
-        # Create a fake user object for the token
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": form_data.username}, expires_delta=access_token_expires
+    if not user or not verify_password(form_data.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        return {"access_token": access_token, "token_type": "bearer"}
-    
-    # TEMPORARY BYPASS: Only check if user exists, ignore password
-    # if not user: # or not verify_password(form_data.password, user.password_hash):
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Incorrect email or password",
-    #         headers={"WWW-Authenticate": "Bearer"},
-    #     )
-    
+
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 

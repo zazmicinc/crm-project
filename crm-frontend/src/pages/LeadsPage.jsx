@@ -7,6 +7,27 @@ import { ListTable } from '../components/shared/ListTable';
 import { StatusBadge } from '../components/shared/StatusBadge';
 import { formatDate } from '../utils/formatDate';
 
+const GRADE_STYLE = {
+    Hot:  { bg: '#fff0f0', color: '#e8192c', dot: '#e8192c' },
+    Warm: { bg: '#fffbeb', color: '#b45309', dot: '#f59e0b' },
+    Cold: { bg: '#f9fafb', color: '#6b7280', dot: '#9ca3af' },
+};
+
+function GradeBadge({ grade }) {
+    const cfg = GRADE_STYLE[grade] || GRADE_STYLE.Cold;
+    return (
+        <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            background: cfg.bg, color: cfg.color,
+            padding: '4px 10px', borderRadius: 20,
+            fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+        }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
+            {grade}
+        </span>
+    );
+}
+
 const columns = [
     {
         key: 'name', label: 'Name', width: '1fr',
@@ -23,6 +44,19 @@ const columns = [
     {
         key: 'company', label: 'Company', width: '1fr',
         render: (lead) => <span style={{ fontSize: 13, color: '#444', fontWeight: 500 }}>{lead.company || '—'}</span>
+    },
+    {
+        key: 'job_title', label: 'Job Title', width: '140px',
+        render: (lead) => <span style={{ fontSize: 13, color: '#666' }}>{lead.job_title || '—'}</span>
+    },
+    {
+        key: 'score', label: 'Score', width: '110px',
+        render: (lead) => (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#0a0a0a', minWidth: 24 }}>{lead.lead_score ?? 0}</span>
+                <GradeBadge grade={lead.lead_grade || 'Cold'} />
+            </div>
+        )
     },
     {
         key: 'status', label: 'Status', width: '130px',

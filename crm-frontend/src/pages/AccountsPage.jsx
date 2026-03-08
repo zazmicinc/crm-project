@@ -7,6 +7,27 @@ import { ListTable } from '../components/shared/ListTable';
 import { StatusBadge } from '../components/shared/StatusBadge';
 import { formatDate } from '../utils/formatDate';
 
+const ACCOUNT_TYPE_STYLE = {
+    Customer: { bg: '#f0fff4', color: '#1a7f4b', dot: '#27ae60' },
+    Partner:  { bg: '#f0f4ff', color: '#1a3f9f', dot: '#3b5de7' },
+    Prospect: { bg: '#f9fafb', color: '#6b7280', dot: '#9ca3af' },
+};
+
+function AccountTypeBadge({ type }) {
+    const cfg = ACCOUNT_TYPE_STYLE[type] || ACCOUNT_TYPE_STYLE.Prospect;
+    return (
+        <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            background: cfg.bg, color: cfg.color,
+            padding: '4px 10px', borderRadius: 20,
+            fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+        }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
+            {type || 'Prospect'}
+        </span>
+    );
+}
+
 const columns = [
     {
         key: 'name', label: 'Account Name', width: '1fr',
@@ -15,6 +36,10 @@ const columns = [
                 {a.name}
             </span>
         )
+    },
+    {
+        key: 'type', label: 'Type', width: '120px',
+        render: (a) => <AccountTypeBadge type={a.account_type} />
     },
     {
         key: 'industry', label: 'Industry', width: '1fr',
@@ -33,10 +58,6 @@ const columns = [
                 {a.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
             </a>
         ) : <span style={{ fontSize: 13, color: '#aaa' }}>—</span>
-    },
-    {
-        key: 'status', label: 'Status', width: '130px',
-        render: (a) => a.status ? <StatusBadge status={a.status} /> : <span style={{ fontSize: 13, color: '#aaa' }}>—</span>
     },
     {
         key: 'phone', label: 'Phone', width: '140px',

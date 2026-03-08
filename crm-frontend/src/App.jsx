@@ -15,6 +15,7 @@ import LeadsPage from './pages/LeadsPage';
 import LeadDetailPage from './pages/LeadDetailPage';
 import PipelineSettingsPage from './pages/PipelineSettingsPage';
 import UsersPage from './pages/UsersPage';
+import TasksPage from './pages/TasksPage';
 
 export default function App() {
     return (
@@ -36,6 +37,7 @@ export default function App() {
                                     <Route path="/accounts/:id" element={<AccountDetailPage />} />
                                     <Route path="/leads" element={<LeadsPage />} />
                                     <Route path="/leads/:id" element={<LeadDetailPage />} />
+                                    <Route path="/tasks" element={<TasksPage />} />
                                     <Route path="/settings/pipelines" element={<PipelineSettingsPage />} />
                                     <Route path="/admin/users" element={<UsersPage />} />
                                 </Routes>

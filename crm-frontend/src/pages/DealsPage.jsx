@@ -63,6 +63,14 @@ const listColumns = [
         }
     },
     {
+        key: 'expected_revenue', label: 'Exp. Revenue', width: '120px',
+        render: (d) => (
+            <span style={{ fontSize: 13, color: '#444', fontWeight: 500 }}>
+                {d.expected_revenue != null ? formatCurrency(d.expected_revenue) : '—'}
+            </span>
+        )
+    },
+    {
         key: 'close_date', label: 'Close Date', width: '120px',
         render: (d) => <span style={{ fontSize: 13, color: '#888' }}>{formatDate(d.close_date)}</span>
     },

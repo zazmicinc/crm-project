@@ -76,6 +76,9 @@ class Account(Base):
     phone = Column(String(50), nullable=True)
     email = Column(String(255), nullable=True)
     address = Column(Text, nullable=True)
+    account_type = Column(String(50), nullable=True, default="Prospect")
+    annual_revenue = Column(Float, nullable=True)
+    employee_count = Column(Integer, nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
@@ -178,6 +181,15 @@ class Deal(Base):
         return None
 
     @property
+    def expected_revenue(self):
+        if self.value is None:
+            return None
+        prob = self.effective_probability
+        if prob is None:
+            return self.value
+        return round(self.value * (prob / 100), 2)
+
+    @property
     def account_name(self):
         return self.account.name if self.account else None
 
@@ -187,28 +199,40 @@ class Deal(Base):
 
 
 class Activity(Base):
-    """An activity log entry (call, email, meeting) linked to an entity."""
+    """An activity log entry (call, email, meeting, task) linked to an entity."""
 
     __tablename__ = "activities"
 
     id = Column(Integer, primary_key=True, index=True)
     type = Column(
-        Enum("call", "email", "meeting", name="activity_type"),
+        String(20),
         nullable=False,
     )
     subject = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    outcome = Column(Text, nullable=True)
     date = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)
     deal_id = Column(Integer, ForeignKey("deals.id"), nullable=True)
     lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
+    is_task = Column(Boolean, nullable=False, default=False)
+    due_date = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    assigned_to_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     contact = relationship("Contact", back_populates="activities")
     deal = relationship("Deal", back_populates="activities")
     lead = relationship("Lead", back_populates="activities")
     account = relationship("Account", back_populates="activities")
+    assigned_to = relationship("User", foreign_keys=[assigned_to_id])
+
+    @property
+    def assigned_to_name(self):
+        if self.assigned_to:
+            return f"{self.assigned_to.first_name} {self.assigned_to.last_name}"
+        return None
 
 
 class Lead(Base):
@@ -235,6 +259,10 @@ class Lead(Base):
         default="New",
     )
     source = Column(String(255), nullable=True)
+    lead_score = Column(Integer, nullable=True, default=0)
+    job_title = Column(String(255), nullable=True)
+    industry = Column(String(255), nullable=True)
+    company_size = Column(String(50), nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     converted_at = Column(DateTime, nullable=True)
     converted_to_contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)
@@ -252,6 +280,15 @@ class Lead(Base):
     account = relationship("Account", foreign_keys=[converted_to_account_id])
     deal = relationship("Deal", foreign_keys=[converted_to_deal_id])
     activities = relationship("Activity", back_populates="lead", cascade="all, delete-orphan")
+
+    @property
+    def lead_grade(self) -> str:
+        score = self.lead_score or 0
+        if score >= 70:
+            return "Hot"
+        elif score >= 40:
+            return "Warm"
+        return "Cold"
 
 
 class Pipeline(Base):

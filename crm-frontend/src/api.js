@@ -140,6 +140,12 @@ export const activitiesApi = {
     create: (data) => request('/activities/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/activities/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/activities/${id}`, { method: 'DELETE' }),
+    tasks: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/activities/tasks${qs ? '?' + qs : ''}`);
+    },
+    complete: (id) => request(`/activities/${id}/complete`, { method: 'PUT' }),
+    reopen: (id) => request(`/activities/${id}/reopen`, { method: 'PUT' }),
 };
 
 // ── Notes ────────────────────────────────────────────────────────────────────

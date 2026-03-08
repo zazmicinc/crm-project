@@ -211,6 +211,14 @@ export default function DealDetailPage() {
                                 {deal.probability_override != null && <span className="ml-1 text-xs text-indigo-400">(manual)</span>}
                             </p>
                         </div>
+                        <div>
+                            <p className="text-slate-500">Expected Revenue</p>
+                            <p className="text-slate-300">
+                                {deal.expected_revenue != null
+                                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(deal.expected_revenue)
+                                    : '—'}
+                            </p>
+                        </div>
                         {deal.stage === 'closed_lost' && (
                             <>
                                 <div>

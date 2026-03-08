@@ -24,6 +24,7 @@ class ActivityType(str, Enum):
     call = "call"
     email = "email"
     meeting = "meeting"
+    task = "task"
 
 
 class LeadStatus(str, Enum):
@@ -44,6 +45,9 @@ class AccountBase(BaseModel):
     phone: Optional[str] = Field(None, max_length=50, examples=["+1-555-0100"])
     email: Optional[EmailStr] = Field(None, examples=["contact@acme.com"])
     address: Optional[str] = Field(None, examples=["123 Main St"])
+    account_type: Optional[str] = Field("Prospect", examples=["Prospect"])
+    annual_revenue: Optional[float] = Field(None, examples=[1000000.0])
+    employee_count: Optional[int] = Field(None, examples=[50])
 
 
 class AccountCreate(AccountBase):
@@ -57,6 +61,9 @@ class AccountUpdate(BaseModel):
     phone: Optional[str] = Field(None, max_length=50)
     email: Optional[EmailStr] = None
     address: Optional[str] = None
+    account_type: Optional[str] = None
+    annual_revenue: Optional[float] = None
+    employee_count: Optional[int] = None
 
 
 class AccountResponse(AccountBase):
@@ -145,6 +152,7 @@ class DealResponse(DealBase):
     account_name: Optional[str] = None
     contact_name: Optional[str] = None
     effective_probability: Optional[int] = None
+    expected_revenue: Optional[float] = None
 
 
 # ── Deal Contact Schemas ──────────────────────────────────────────────────────
@@ -234,11 +242,16 @@ class ActivityBase(BaseModel):
     type: ActivityType = Field(..., examples=["call"])
     subject: str = Field(..., min_length=1, max_length=255, examples=["Follow-up call"])
     description: Optional[str] = Field(None, examples=["Discussed pricing options"])
+    outcome: Optional[str] = Field(None, examples=["Agreed to follow up next week"])
     date: Optional[datetime] = Field(None, examples=["2026-02-17T10:00:00"])
     contact_id: Optional[int] = Field(None, examples=[1])
     deal_id: Optional[int] = Field(None, examples=[1])
     lead_id: Optional[int] = Field(None, examples=[1])
     account_id: Optional[int] = Field(None, examples=[1])
+    is_task: bool = Field(False, examples=[False])
+    due_date: Optional[datetime] = Field(None, examples=["2026-03-15T09:00:00"])
+    completed_at: Optional[datetime] = Field(None)
+    assigned_to_id: Optional[int] = Field(None, examples=[1])
 
 
 class ActivityCreate(ActivityBase):
@@ -249,11 +262,16 @@ class ActivityUpdate(BaseModel):
     type: Optional[ActivityType] = None
     subject: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
+    outcome: Optional[str] = None
     date: Optional[datetime] = None
     contact_id: Optional[int] = None
     deal_id: Optional[int] = None
     lead_id: Optional[int] = None
     account_id: Optional[int] = None
+    is_task: Optional[bool] = None
+    due_date: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    assigned_to_id: Optional[int] = None
 
 
 class ActivityResponse(ActivityBase):
@@ -262,6 +280,7 @@ class ActivityResponse(ActivityBase):
     id: int
     date: datetime
     created_at: datetime
+    assigned_to_name: Optional[str] = None
 
 
 # ── Lead Schemas ─────────────────────────────────────────────────────────────
@@ -276,6 +295,10 @@ class LeadBase(BaseModel):
     status: LeadStatus = Field(LeadStatus.New, examples=["New"])
     source: Optional[str] = Field(None, max_length=255, examples=["Website"])
     owner_id: Optional[int] = Field(None, examples=[1])
+    lead_score: Optional[int] = Field(None, ge=0, le=100, examples=[75])
+    job_title: Optional[str] = Field(None, max_length=255, examples=["VP of Sales"])
+    industry: Optional[str] = Field(None, max_length=255, examples=["Technology"])
+    company_size: Optional[str] = Field(None, max_length=50, examples=["51-200"])
 
 
 class LeadCreate(LeadBase):
@@ -291,12 +314,17 @@ class LeadUpdate(BaseModel):
     status: Optional[LeadStatus] = None
     source: Optional[str] = Field(None, max_length=255)
     owner_id: Optional[int] = None
+    lead_score: Optional[int] = Field(None, ge=0, le=100)
+    job_title: Optional[str] = Field(None, max_length=255)
+    industry: Optional[str] = Field(None, max_length=255)
+    company_size: Optional[str] = Field(None, max_length=50)
 
 
 class LeadResponse(LeadBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    lead_grade: Optional[str] = None
     converted_at: Optional[datetime] = None
     converted_to_contact_id: Optional[int] = None
     converted_to_account_id: Optional[int] = None

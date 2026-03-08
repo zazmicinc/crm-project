@@ -1,6 +1,7 @@
 """Activities CRUD router."""
 
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -56,6 +57,30 @@ def create_activity(
     db.commit()
     db.refresh(db_activity)
     return db_activity
+
+
+@router.get("/tasks", response_model=list[ActivityResponse])
+def list_tasks(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    assigned_to_id: Optional[int] = Query(None, description="Filter by assignee"),
+    completed: Optional[bool] = Query(None, description="Filter by completion status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """List tasks (activities with is_task=True)."""
+    if not check_permissions(current_user, "activities.read"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    query = db.query(Activity).filter(Activity.is_task == True)
+    if assigned_to_id:
+        query = query.filter(Activity.assigned_to_id == assigned_to_id)
+    if completed is True:
+        query = query.filter(Activity.completed_at != None)
+    elif completed is False:
+        query = query.filter(Activity.completed_at == None)
+
+    return query.order_by(Activity.due_date.asc().nulls_last()).offset(skip).limit(limit).all()
 
 
 @router.get("/", response_model=list[ActivityResponse])
@@ -130,7 +155,7 @@ def update_activity(
 
 @router.delete("/{activity_id}", status_code=204)
 def delete_activity(
-    activity_id: int, 
+    activity_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -144,3 +169,47 @@ def delete_activity(
 
     db.delete(activity)
     db.commit()
+
+
+@router.put("/{activity_id}/complete", response_model=ActivityResponse)
+def complete_task(
+    activity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Mark a task as complete."""
+    if not check_permissions(current_user, "activities.update"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    if not activity.is_task:
+        raise HTTPException(status_code=400, detail="Activity is not a task")
+
+    activity.completed_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(activity)
+    return activity
+
+
+@router.put("/{activity_id}/reopen", response_model=ActivityResponse)
+def reopen_task(
+    activity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Reopen a completed task."""
+    if not check_permissions(current_user, "activities.update"):
+        raise HTTPException(status_code=403, detail="Not enough privileges")
+
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    if not activity.is_task:
+        raise HTTPException(status_code=400, detail="Activity is not a task")
+
+    activity.completed_at = None
+    db.commit()
+    db.refresh(activity)
+    return activity
