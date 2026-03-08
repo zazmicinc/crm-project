@@ -41,7 +41,9 @@ export default function DashboardPage() {
         </div>
     );
 
-    const formatCurrency = (v) =>
+    if (!summary) return (<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"60vh",color:"#999",fontSize:14}}>Dashboard data unavailable — check backend is running.</div>);
+
+  const formatCurrency = (v) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
 
     // Mock data for Lead Analytics and Deal Insights
