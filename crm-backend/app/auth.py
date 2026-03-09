@@ -76,6 +76,6 @@ async def get_current_admin_user(current_user: User = Depends(get_current_active
 def check_permissions(user: User, required_permission: str) -> bool:
     """Check if user has a specific permission."""
     # Admin has all permissions
-    if "*" in user.role.permissions:
+    if "*" in user.role.permissions or "all" in user.role.permissions:
         return True
     return required_permission in user.role.permissions

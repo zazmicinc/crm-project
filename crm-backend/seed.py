@@ -1,95 +1,129 @@
-"""Seed script for CRM database."""
-from datetime import datetime, timedelta, timezone
-import bcrypt
-from app.database import SessionLocal, engine, Base
-from app.models import Role, User, Account, Contact, Deal, Activity, Lead, Pipeline, Stage
+from app.database import SessionLocal
+from app.models import User, Lead, Contact, Account, Deal, Activity, Pipeline, Stage
+from app.auth import get_password_hash
+from datetime import datetime, timedelta
+import random
 
+db = SessionLocal()
 
+print("Clearing existing data...")
+db.query(Activity).delete()
+db.query(Deal).delete()
+db.query(Contact).delete()
+db.query(Lead).delete()
+db.query(Account).delete()
+db.query(Stage).delete()
+db.query(Pipeline).delete()
+db.query(User).delete()
+db.commit()
 
-def seed():
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    if db.query(Role).count() > 0:
-        print("Already seeded. Skipping.")
-        db.close()
-        return
-    now = datetime.now(timezone.utc)
+print("Creating users...")
+admin = User(email="admin@crm.com", full_name="Admin User", hashed_password=get_password_hash("admin123"), is_active=True, role="admin")
+sarah = User(email="sarah@crm.com", full_name="Sarah Chen", hashed_password=get_password_hash("admin123"), is_active=True, role="sales")
+mike = User(email="mike@crm.com", full_name="Mike Torres", hashed_password=get_password_hash("admin123"), is_active=True, role="sales")
+db.add_all([admin, sarah, mike])
+db.commit()
 
-    r1 = Role(name="Admin", permissions=["*"])
-    r2 = Role(name="Manager", permissions=["read","write","delete"])
-    r3 = Role(name="Sales Rep", permissions=["read","write"])
-    r4 = Role(name="Viewer", permissions=["read"])
-    db.add_all([r1,r2,r3,r4]); db.flush()
+print("Creating pipeline...")
+pipeline = Pipeline(name="Default Pipeline", description="Main sales pipeline")
+db.add(pipeline)
+db.commit()
+stages = [
+    Stage(name="Prospecting", order=1, pipeline_id=pipeline.id, probability=10),
+    Stage(name="Qualification", order=2, pipeline_id=pipeline.id, probability=25),
+    Stage(name="Proposal", order=3, pipeline_id=pipeline.id, probability=50),
+    Stage(name="Negotiation", order=4, pipeline_id=pipeline.id, probability=75),
+    Stage(name="Closed Won", order=5, pipeline_id=pipeline.id, probability=100),
+    Stage(name="Closed Lost", order=6, pipeline_id=pipeline.id, probability=0),
+]
+db.add_all(stages)
+db.commit()
 
-    u1 = User(email="admin@crm.com",first_name="Admin",last_name="User",password_hash=bcrypt.hashpw(b"admin123", bcrypt.gensalt()).decode(),role_id=r1.id)
-    u2 = User(email="sarah@crm.com",first_name="Sarah",last_name="Chen",password_hash=bcrypt.hashpw(b"password123", bcrypt.gensalt()).decode(),role_id=r2.id)
-    u3 = User(email="mike@crm.com",first_name="Mike",last_name="Johnson",password_hash=bcrypt.hashpw(b"password123", bcrypt.gensalt()).decode(),role_id=r3.id)
-    db.add_all([u1,u2,u3]); db.flush()
+print("Creating accounts...")
+accounts_data = [
+    ("Stark Industries", "Technology", "stark.com", "Enterprise", 5000, "(310)555-0400"),
+    ("Wayne Enterprises", "Conglomerate", "wayne.com", "Enterprise", 12000, "(212)555-0600"),
+    ("Initech", "Software", "initech.com", "Mid-Market", 800, "(650)555-0300"),
+    ("Globex Intl", "Manufacturing", "globex.com", "Mid-Market", 2200, "(415)555-0200"),
+    ("Acme Corp", "Technology", "acme.com", "SMB", 150, "(415)555-0100"),
+    ("Umbrella Corp", "Biotech", "umbrella.com", "Enterprise", 8000, "(312)555-0700"),
+    ("Hooli", "Technology", "hooli.com", "Enterprise", 3500, "(408)555-0800"),
+    ("Pied Piper", "Software", "piedpiper.com", "SMB", 45, "(650)555-0900"),
+]
+accounts = []
+for name, industry, website, type_, employees, phone in accounts_data:
+    a = Account(name=name, industry=industry, website=website, type=type_, employees=employees, phone=phone, status="prospect", owner_id=random.choice([admin.id, sarah.id, mike.id]))
+    db.add(a)
+    accounts.append(a)
+db.commit()
 
-    a1 = Account(name="Acme Corp",industry="Technology",phone="(415)555-0100",email="info@acme.com",owner_id=u2.id)
-    a2 = Account(name="Globex Intl",industry="Manufacturing",phone="(415)555-0200",email="info@globex.com",owner_id=u2.id)
-    a3 = Account(name="Initech",industry="Software",phone="(650)555-0300",email="info@initech.io",owner_id=u3.id)
-    a4 = Account(name="Stark Industries",industry="Defense",phone="(310)555-0400",email="info@stark.com",owner_id=u3.id)
-    a5 = Account(name="Wayne Enterprises",industry="Conglomerate",phone="(212)555-0500",email="info@wayne.com",owner_id=u2.id)
-    db.add_all([a1,a2,a3,a4,a5]); db.flush()
+print("Creating leads...")
+leads_data = [
+    ("Ryan","O'Brien","robrien@tech.com","Boston Analytics","VP Sales","Cold Call","New"),
+    ("Tom","Anderson","tom@austin.com","Austin Digital","CEO","Referral","Qualified"),
+    ("Priya","Sharma","priya@valley.com","Valley Innovations","CTO","Trade Show","Contacted"),
+    ("Maria","Garcia","maria@socal.com","SoCal Media","Director","LinkedIn","Contacted"),
+    ("James","Wilson","james@pnw.com","PNW Tech","Product Manager","Website","New"),
+    ("Chen","Wei","cwei@startupco.com","StartupCo","Founder","Referral","Qualified"),
+    ("Amanda","Lee","amanda@bigcorp.com","BigCorp","VP Marketing","Cold Email","New"),
+    ("David","Kim","dkim@techfirm.com","TechFirm","Engineer","Website","Contacted"),
+    ("Fatima","Al-Hassan","fatima@fhconsulting.com","FH Consulting","Partner","LinkedIn","Qualified"),
+    ("Marcus","Johnson","mjohnson@retail.com","Retail Plus","COO","Trade Show","New"),
+    ("Sofia","Rossi","srossi@eurotech.com","EuroTech","Director","Cold Call","Contacted"),
+    ("Alex","Turner","aturner@media.com","Media Group","CMO","Referral","New"),
+]
+for first, last, email, company, title, source, status in leads_data:
+    l = Lead(first_name=first, last_name=last, email=email, company=company, job_title=title, source=source, status=status, score=random.randint(10, 90), owner_id=random.choice([admin.id, sarah.id, mike.id]), created_at=datetime.now() - timedelta(days=random.randint(1, 60)))
+    db.add(l)
+db.commit()
 
-    c1 = Contact(name="Alice Wang",email="alice@acme.com",phone="(415)555-1001",company="Acme Corp",account_id=a1.id,owner_id=u2.id)
-    c2 = Contact(name="Bob Martinez",email="bob@acme.com",phone="(415)555-1002",company="Acme Corp",account_id=a1.id,owner_id=u2.id)
-    c3 = Contact(name="Carol Davis",email="carol@globex.com",phone="(415)555-2001",company="Globex Intl",account_id=a2.id,owner_id=u2.id)
-    c4 = Contact(name="David Kim",email="david@initech.io",phone="(650)555-3001",company="Initech",account_id=a3.id,owner_id=u3.id)
-    c5 = Contact(name="Eva Nguyen",email="eva@initech.io",phone="(650)555-3002",company="Initech",account_id=a3.id,owner_id=u3.id)
-    c6 = Contact(name="Frank Patel",email="frank@stark.com",phone="(310)555-4001",company="Stark Industries",account_id=a4.id,owner_id=u3.id)
-    c7 = Contact(name="Grace Lee",email="grace@wayne.com",phone="(212)555-5001",company="Wayne Enterprises",account_id=a5.id,owner_id=u2.id)
-    c8 = Contact(name="Henry Brooks",email="henry@wayne.com",phone="(212)555-5002",company="Wayne Enterprises",account_id=a5.id,owner_id=u2.id)
-    db.add_all([c1,c2,c3,c4,c5,c6,c7,c8]); db.flush()
+print("Creating contacts...")
+contacts_data = [
+    ("Frank","Patel","fpatel@stark.com","(310)555-1001",accounts[0]),
+    ("Grace","Lee","glee@wayne.com","(212)555-1002",accounts[1]),
+    ("Henry","Brooks","hbrooks@initech.com","(650)555-1003",accounts[2]),
+    ("David","Kim","dkim@globex.com","(415)555-1004",accounts[3]),
+    ("Eva","Nguyen","anguyen@acme.com","(415)555-1005",accounts[4]),
+    ("Carol","Davis","cdavis@umbrella.com","(312)555-1006",accounts[5]),
+    ("Bob","Martinez","bmartinez@hooli.com","(408)555-1007",accounts[6]),
+    ("Alice","Wong","awong@piedpiper.com","(650)555-1008",accounts[7]),
+    ("Jordan","Smith","jsmith@stark.com","(310)555-1009",accounts[0]),
+    ("Taylor","Brown","tbrown@wayne.com","(212)555-1010",accounts[1]),
+]
+contacts = []
+for first, last, email, phone, account in contacts_data:
+    c = Contact(first_name=first, last_name=last, email=email, phone=phone, account_id=account.id, status="active", owner_id=random.choice([admin.id, sarah.id, mike.id]), created_at=datetime.now() - timedelta(days=random.randint(1, 90)))
+    db.add(c)
+    contacts.append(c)
+db.commit()
 
-    p = Pipeline(name="Default Pipeline",is_default=1)
-    db.add(p); db.flush()
-    s1=Stage(pipeline_id=p.id,name="Prospecting",order=1,probability=10)
-    s2=Stage(pipeline_id=p.id,name="Qualification",order=2,probability=25)
-    s3=Stage(pipeline_id=p.id,name="Proposal",order=3,probability=50)
-    s4=Stage(pipeline_id=p.id,name="Negotiation",order=4,probability=75)
-    s5=Stage(pipeline_id=p.id,name="Closed Won",order=5,probability=100)
-    s6=Stage(pipeline_id=p.id,name="Closed Lost",order=6,probability=0)
-    db.add_all([s1,s2,s3,s4,s5,s6]); db.flush()
+print("Creating deals...")
+stage_map = {s.name: s for s in stages}
+deals_data = [
+    ("Stark Platform License", 350000, "Negotiation", "negotiation", accounts[0]),
+    ("Wayne Enterprise Suite", 500000, "Proposal", "proposal", accounts[1]),
+    ("Initech CRM Rollout", 45000, "Qualification", "qualification", accounts[2]),
+    ("Globex Data Migration", 80000, "Prospecting", "prospecting", accounts[3]),
+    ("Acme Starter Pack", 12000, "Closed Won", "closed_won", accounts[4]),
+    ("Umbrella Analytics", 220000, "Negotiation", "negotiation", accounts[5]),
+    ("Hooli Integration", 175000, "Proposal", "proposal", accounts[6]),
+    ("Pied Piper Pro", 8500, "Qualification", "qualification", accounts[7]),
+    ("Stark Mobile App", 95000, "Prospecting", "prospecting", accounts[0]),
+    ("Wayne Security Module", 135000, "Closed Won", "closed_won", accounts[1]),
+    ("Initech Dev Tools", 28000, "Closed Lost", "closed_lost", accounts[2]),
+    ("Globex Pilot", 15000, "Closed Lost", "closed_lost", accounts[3]),
+]
+for title, value, stage_name, stage_enum, account in deals_data:
+    stage_obj = stage_map.get(stage_name)
+    d = Deal(title=title, value=value, stage=stage_enum, pipeline_id=pipeline.id, stage_id=stage_obj.id if stage_obj else stages[0].id, account_id=account.id, owner_id=random.choice([admin.id, sarah.id, mike.id]), close_date=datetime.now().date() + timedelta(days=random.randint(7, 90)), created_at=datetime.now() - timedelta(days=random.randint(1, 45)))
+    db.add(d)
+db.commit()
 
-    d1=Deal(title="Acme Platform License",value=75000,stage="proposal",contact_id=c1.id,account_id=a1.id,pipeline_id=p.id,stage_id=s3.id,owner_id=u2.id)
-    d2=Deal(title="Acme Support Contract",value=25000,stage="negotiation",contact_id=c2.id,account_id=a1.id,pipeline_id=p.id,stage_id=s4.id,owner_id=u2.id)
-    d3=Deal(title="Globex ERP Integration",value=120000,stage="qualification",contact_id=c3.id,account_id=a2.id,pipeline_id=p.id,stage_id=s2.id,owner_id=u2.id)
-    d4=Deal(title="Initech Dev Tools",value=45000,stage="proposal",contact_id=c4.id,account_id=a3.id,pipeline_id=p.id,stage_id=s3.id,owner_id=u3.id)
-    d5=Deal(title="Initech Analytics",value=60000,stage="prospecting",contact_id=c5.id,account_id=a3.id,pipeline_id=p.id,stage_id=s1.id,owner_id=u3.id)
-    d6=Deal(title="Stark CRM Migration",value=200000,stage="negotiation",contact_id=c6.id,account_id=a4.id,pipeline_id=p.id,stage_id=s4.id,owner_id=u3.id)
-    d7=Deal(title="Wayne Enterprise License",value=350000,stage="qualification",contact_id=c7.id,account_id=a5.id,pipeline_id=p.id,stage_id=s2.id,owner_id=u2.id)
-    d8=Deal(title="Acme Data Migration",value=40000,stage="closed_won",contact_id=c1.id,account_id=a1.id,pipeline_id=p.id,stage_id=s5.id,owner_id=u2.id)
-    d9=Deal(title="Globex Pilot",value=15000,stage="closed_lost",contact_id=c3.id,account_id=a2.id,pipeline_id=p.id,stage_id=s6.id,owner_id=u2.id)
-    db.add_all([d1,d2,d3,d4,d5,d6,d7,d8,d9]); db.flush()
+print("Creating activities...")
+for i in range(40):
+    a = Activity(type=random.choice(["call","email","meeting","note"]), notes=f"Activity note {i+1}", date=datetime.now() - timedelta(days=random.randint(0, 14)), owner_id=random.choice([admin.id, sarah.id, mike.id]))
+    db.add(a)
+db.commit()
 
-    l1=Lead(first_name="James",last_name="Wilson",email="james@outlook.com",company="PNW Tech",status="New",source="Website",owner_id=u3.id)
-    l2=Lead(first_name="Maria",last_name="Garcia",email="maria@gmail.com",company="SoCal Media",status="Contacted",source="LinkedIn",owner_id=u2.id)
-    l3=Lead(first_name="Tom",last_name="Anderson",email="tom@yahoo.com",company="Austin Digital",status="Qualified",source="Referral",owner_id=u3.id)
-    l4=Lead(first_name="Priya",last_name="Sharma",email="priya@company.com",company="Valley Innovations",status="New",source="Trade Show",owner_id=u2.id)
-    l5=Lead(first_name="Ryan",last_name="OBrien",email="robrien@tech.com",company="Boston Analytics",status="Contacted",source="Cold Call",owner_id=u3.id)
-    db.add_all([l1,l2,l3,l4,l5]); db.flush()
-
-    acts=[
-        Activity(type="call",subject="Discovery call with Alice",date=now-timedelta(days=1),contact_id=c1.id,deal_id=d1.id),
-        Activity(type="call",subject="Follow-up with Carol",date=now-timedelta(days=2),contact_id=c3.id,deal_id=d3.id),
-        Activity(type="call",subject="Pricing with Frank",date=now-timedelta(days=3),contact_id=c6.id,deal_id=d6.id),
-        Activity(type="email",subject="Proposal sent to Alice",date=now-timedelta(days=1),contact_id=c1.id,deal_id=d1.id),
-        Activity(type="email",subject="Contract draft to Bob",date=now-timedelta(days=2),contact_id=c2.id,deal_id=d2.id),
-        Activity(type="email",subject="Follow-up with David",date=now-timedelta(days=3),contact_id=c4.id,deal_id=d4.id),
-        Activity(type="email",subject="Case study to Grace",date=now-timedelta(days=5),contact_id=c7.id,deal_id=d7.id),
-        Activity(type="meeting",subject="Demo with Initech",date=now-timedelta(days=1),contact_id=c5.id,deal_id=d5.id),
-        Activity(type="meeting",subject="QBR with Acme",date=now-timedelta(days=4),contact_id=c1.id,account_id=a1.id),
-        Activity(type="meeting",subject="Negotiation with Stark",date=now-timedelta(days=5),contact_id=c6.id,deal_id=d6.id),
-        Activity(type="call",subject="Check-in with Eva",date=now-timedelta(hours=6),contact_id=c5.id,deal_id=d5.id),
-        Activity(type="email",subject="Updated proposal to Carol",date=now-timedelta(hours=12),contact_id=c3.id,deal_id=d3.id),
-    ]
-    db.add_all(acts)
-    db.commit()
-    db.close()
-    print("Seeded: 4 roles, 3 users, 5 accounts, 8 contacts, 9 deals, 5 leads, 12 activities")
-    print("Login: admin@crm.com / admin123")
-
-if __name__ == "__main__":
-    seed()
+print("Done! Seeded: 3 users, 8 accounts, 12 leads, 10 contacts, 12 deals, 40 activities")
+db.close()

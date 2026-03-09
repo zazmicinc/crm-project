@@ -56,7 +56,7 @@ export const authApi = {
 export const usersApi = {
     list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
-        return request(`/users${qs ? '?' + qs : ''}`);
+        return request(`/users/${qs ? '?' + qs : ''}`);
     },
     get: (id) => request(`/users/${id}`),
     create: (data) => request('/users/', { method: 'POST', body: JSON.stringify(data) }),
@@ -75,7 +75,7 @@ export const rolesApi = {
 export const contactsApi = {
     list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
-        return request(`/contacts${qs ? '?' + qs : ''}`);
+        return request(`/contacts/${qs ? '?' + qs : ''}`);
     },
     get: (id) => request(`/contacts/${id}`),
     create: (data) => request('/contacts/', { method: 'POST', body: JSON.stringify(data) }),
@@ -88,7 +88,7 @@ export const contactsApi = {
 export const dealsApi = {
     list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
-        return request(`/deals${qs ? '?' + qs : ''}`);
+        return request(`/deals/${qs ? '?' + qs : ''}`);
     },
     get: (id) => request(`/deals/${id}`),
     create: (data) => request('/deals/', { method: 'POST', body: JSON.stringify(data) }),
@@ -109,7 +109,7 @@ export const dealsApi = {
 export const productsApi = {
     list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
-        return request(`/products${qs ? '?' + qs : ''}`);
+        return request(`/products/${qs ? '?' + qs : ''}`);
     },
     get: (id) => request(`/products/${id}`),
     create: (data) => request('/products/', { method: 'POST', body: JSON.stringify(data) }),
@@ -120,11 +120,11 @@ export const productsApi = {
 export const activitiesApi = {
     list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
-        return request(`/activities${qs ? '?' + qs : ''}`);
+        return request(`/activities/${qs ? '?' + qs : ''}`);
     },
     tasks: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
-        return request(`/activities${qs ? '?' + qs : ''}`);
+        return request(`/activities/${qs ? '?' + qs : ''}`);
     },
     get: (id) => request(`/activities/${id}`),
     create: (data) => request('/activities/', { method: 'POST', body: JSON.stringify(data) }),
@@ -137,7 +137,7 @@ export const activitiesApi = {
 export const notesApi = {
     list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
-        return request(`/notes${qs ? '?' + qs : ''}`);
+        return request(`/notes/${qs ? '?' + qs : ''}`);
     },
     get: (id) => request(`/notes/${id}`),
     create: (data) => request('/notes/', { method: 'POST', body: JSON.stringify(data) }),
@@ -148,7 +148,7 @@ export const notesApi = {
 export const accountsApi = {
     list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
-        return request(`/accounts${qs ? '?' + qs : ''}`);
+        return request(`/accounts/${qs ? '?' + qs : ''}`);
     },
     get: (id) => request(`/accounts/${id}`),
     create: (data) => request('/accounts/', { method: 'POST', body: JSON.stringify(data) }),
@@ -163,7 +163,7 @@ export const accountsApi = {
 export const leadsApi = {
     list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
-        return request(`/leads${qs ? '?' + qs : ''}`);
+        return request(`/leads/${qs ? '?' + qs : ''}`);
     },
     get: (id) => request(`/leads/${id}`),
     create: (data) => request('/leads/', { method: 'POST', body: JSON.stringify(data) }),
