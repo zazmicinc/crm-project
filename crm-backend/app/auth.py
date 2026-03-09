@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt as _bcrypt
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -17,16 +17,18 @@ SECRET_KEY = "CHANGE_ME_IN_PRODUCTION_SECRET_KEY"  # TODO: Move to env var
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# passlib replaced with direct bcrypt
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    import bcrypt
+    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    import bcrypt
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -76,6 +78,6 @@ async def get_current_admin_user(current_user: User = Depends(get_current_active
 def check_permissions(user: User, required_permission: str) -> bool:
     """Check if user has a specific permission."""
     # Admin has all permissions
-    if "*" in user.role.permissions:
+    if "*" in user.role.permissions or "all" in user.role.permissions:
         return True
     return required_permission in user.role.permissions
